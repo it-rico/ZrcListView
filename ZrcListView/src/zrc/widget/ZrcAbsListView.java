@@ -107,6 +107,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 	private OnStartListener onLoadMoreStart;
 	private OnScrollStateListener onScrollStateListener;
 	private int mScrollState = OnScrollStateListener.EDGE;
+    protected boolean showHeader = false;
 	private boolean isLoadingMore = false;
 	private boolean isLoadMoreOn = false;
 	private boolean isRefreshing = false;
@@ -1301,7 +1302,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             final Rect listPadding = mListPadding;
             final Headable zrcHeader = mZrcHeader;
             final boolean isOnLoading = zrcHeader!=null && zrcHeader.getState()==Headable.STATE_LOADING;
-            final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (isOnLoading?zrcHeader.getHeight():0));
+            final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (showHeader?zrcHeader.getHeight():0));
             final boolean cannotScrollDown = (firstPosition == 0 && topOffset > 0);
             final boolean isTooShort = childCount == mItemCount && lastBottom-firstTop<getHeight();
             final int bottomOffset = isTooShort?firstTop-listPadding.top-mFirstTopOffset:lastBottom - getHeight() + listPadding.bottom+mLastBottomOffset;
@@ -1312,6 +1313,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 if(zrcHeader!=null && onRefreshStart!=null && zrcHeader.getState()==Headable.STATE_RELEASE || isOnLoading){
                 	if(!isOnLoading){
                 	    isRefreshing = true;
+                        showHeader = true;
                 		zrcHeader.stateChange(Headable.STATE_LOADING, null);
                     	onRefreshStart.onStart();
                 	}
@@ -1504,9 +1506,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             incrementalDeltaY = Math.min(height - 1, incrementalDeltaY);
         }
         final Headable zrcHeader = mZrcHeader;
-        final boolean isOnLoading = zrcHeader!=null && zrcHeader.getState()==Headable.STATE_LOADING;
         final boolean isTooShort = childCount == mItemCount && lastBottom-firstTop<getHeight();
-        final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (isOnLoading?zrcHeader.getHeight():0));
+        final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (showHeader?zrcHeader.getHeight():0));
         final int bottomOffset = isTooShort?firstTop-listPadding.top:lastBottom - getHeight() + listPadding.bottom+ mLastBottomOffset;
         final boolean isOutOfTop = firstPosition == 0 &&
                 topOffset > 0;
@@ -1827,6 +1828,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 		    		}
                     isRefreshing = true;
                     onRefreshStart.onStart();
+                    showHeader = true;
 		    		mZrcHeader.stateChange(Headable.STATE_LOADING, null);
 		    		mFlingRunnable.startScroll(mFirstTop - newTop, (int) (Math.abs(newTop - mFirstTop)/mDensity)+50, true);
 		    		mTouchMode = TOUCH_MODE_RESCROLL;
@@ -1862,6 +1864,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 					@Override
 					public void run() {
 						if(mFlingRunnable!=null && mTouchMode!=TOUCH_MODE_SCROLL){
+                            showHeader = false;
 							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
 							if(!hasScroll){
 					    		zrcHeader.stateChange(Headable.STATE_REST, null);
@@ -1893,6 +1896,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 					@Override
 					public void run() {
 						if(mFlingRunnable!=null && mTouchMode!=TOUCH_MODE_SCROLL){
+                            showHeader = false;
 							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
 							if(!hasScroll){
 					    		zrcHeader.stateChange(Headable.STATE_REST, null);
