@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 
+import zrc.util.APIUtil;
 import zrc.widget.ZrcListView.OnItemClickListener;
 import zrc.widget.ZrcListView.OnItemLongClickListener;
 
@@ -263,5 +264,10 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
     @Override
     protected boolean canAnimate() {
         return super.canAnimate() && mItemCount > 0;
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected boolean isSupportHardwareAccelerated(){
+        return APIUtil.isSupport(11) && isHardwareAccelerated();
     }
 }

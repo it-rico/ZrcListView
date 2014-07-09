@@ -1057,9 +1057,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         invalidate();
         mActivePointerId = INVALID_POINTER;
     }
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	protected void invalidateParentIfNeeded() {
-		if (isHardwareAccelerated() && getParent() instanceof View ) {
+		if (getParent() instanceof View ) {
 			( (View) getParent() ).invalidate();
 		}
 	}
@@ -1424,17 +1423,17 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mFlingRunnable.startScroll(distance, duration, linear);
         }
     }
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void createScrollingCache() {
-        if (mScrollingCacheEnabled && !mCachingStarted && !isHardwareAccelerated()) {
+        if (mScrollingCacheEnabled && !mCachingStarted && !isSupportHardwareAccelerated()) {
             setChildrenDrawnWithCacheEnabled(true);
             setChildrenDrawingCacheEnabled(true);
             mCachingStarted = mCachingActive = true;
         }
     }
+
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void clearScrollingCache() {
-        if (!isHardwareAccelerated()) {
+        if (!isSupportHardwareAccelerated()) {
             if (mClearScrollingCache == null) {
                 mClearScrollingCache = new Runnable() {
                     @Override
