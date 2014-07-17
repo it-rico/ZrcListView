@@ -37,26 +37,26 @@ public class MainActivity extends Activity {
         listView = (ZrcListView) findViewById(R.id.zListView);
         handler = new Handler();
 
-        // 设置默认偏移量，主要用于实现透明标题栏功能。
+        // 设置默认偏移量，主要用于实现透明标题栏功能。（可选）
         float density = getResources().getDisplayMetrics().density;
         listView.setFirstTopOffset((int) (50 * density));
 
-        // 设置下拉刷新的样式
+        // 设置下拉刷新的样式（可选，但如果没有Header则无法下拉刷新）
         SimpleHeader header = new SimpleHeader(this);
         header.setTextColor(0xff0066aa);
         header.setCircleColor(0xff33bbee);
         listView.setHeadable(header);
 
-        // 设置加载更多的样式
+        // 设置加载更多的样式（可选）
         SimpleFooter footer = new SimpleFooter(this);
         footer.setCircleColor(0xff33bbee);
         listView.setFootable(footer);
 
-        // 设置列表项出现动画
+        // 设置列表项出现动画（可选）
         listView.setItemAnimForTopIn(R.anim.topitem_in);
         listView.setItemAnimForBottomIn(R.anim.bottomitem_in);
 
-        // 下拉刷新事件回调
+        // 下拉刷新事件回调（可选）
         listView.setOnRefreshStartListener(new OnStartListener() {
             @Override
             public void onStart() {
@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // 加载更多事件回调
+        // 加载更多事件回调（可选）
         listView.setOnLoadMoreStartListener(new OnStartListener() {
             @Override
             public void onStart() {
