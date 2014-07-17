@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="zrc.widget"
-    android:versionCode="1"
-    android:versionName="1.0" >
+    android:versionCode="103"
+    android:versionName="v1.03" >
 
     <uses-sdk
         android:minSdkVersion="8"
