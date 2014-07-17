@@ -596,10 +596,13 @@ public class ZrcListView extends ZrcAbsListView {
                     if (mItemAnimForTopIn != 0 && child.getVisibility() == View.VISIBLE) {
                         child.startAnimation(AnimationUtils.loadAnimation(getContext(), mItemAnimForTopIn));
                     }
+                    scrollToAdjustViewsUpOrDown();
                 }else{
                     fillDown(mFirstPosition, firstTop, false);
+                    if(mTouchMode!=TOUCH_MODE_SCROLL){
+                        scrollToAdjustViewsUpOrDown();
+                    }
                 }
-                scrollToAdjustViewsUpOrDown();
                 break;
             }
 

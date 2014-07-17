@@ -115,6 +115,13 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 	protected int mLastBottomOffset = 0;
 	protected float mDensity = 0;
 
+    private Runnable mResetRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mZrcHeader.stateChange(Headable.STATE_REST, null);
+        }
+    };
+
     public ZrcAbsListView(Context context) {
         super(context);
         initAbsListView();
@@ -1540,6 +1547,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 	        		final int state = zrcHeader.getState();
                 	if(topOffset<10 && (state==Headable.STATE_SUCCESS || state==Headable.STATE_FAIL)){
                 		zrcHeader.stateChange(Headable.STATE_REST, null);
+                        removeCallbacks(mResetRunnable);
                 	}
     			}
     		}
@@ -1867,8 +1875,12 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
 							if(!hasScroll){
 					    		zrcHeader.stateChange(Headable.STATE_REST, null);
+							}else{
+							    postDelayed(mResetRunnable, 500);
 							}
-						}
+						}else{
+                            postDelayed(mResetRunnable, 500);
+                        }
 					}
 				}, 1000);
 	    		if(unShownState){
@@ -1879,6 +1891,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
     		}
     	}
     }
+
     public void setRefreshFail(){
     	setRefreshFail("刷新失败");
     }
@@ -1899,8 +1912,12 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
 							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
 							if(!hasScroll){
 					    		zrcHeader.stateChange(Headable.STATE_REST, null);
-							}
-						}
+                            }else{
+                                postDelayed(mResetRunnable, 500);
+                            }
+                        }else{
+                            postDelayed(mResetRunnable, 500);
+                        }
 					}
 				}, 1000);
 	    		if(unShownState){
