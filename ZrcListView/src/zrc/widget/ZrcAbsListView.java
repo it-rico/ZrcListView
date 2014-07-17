@@ -1,4 +1,5 @@
 package zrc.widget;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,7 @@ import android.support.v4.util.LongSparseArray;
 import android.support.v4.util.SparseArrayCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -35,8 +37,7 @@ import zrc.widget.ZrcListView.OnScrollListener;
 import zrc.widget.ZrcListView.OnScrollStateListener;
 import zrc.widget.ZrcListView.OnStartListener;
 
-abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
-        ViewTreeObserver.OnTouchModeChangeListener {
+abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements ViewTreeObserver.OnTouchModeChangeListener {
     public static final int TRANSCRIPT_MODE_DISABLED = 0;
     public static final int TRANSCRIPT_MODE_NORMAL = 1;
     public static final int TRANSCRIPT_MODE_ALWAYS_SCROLL = 2;
@@ -67,8 +68,6 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
     boolean mCachingStarted;
     boolean mCachingActive;
     int mMotionPosition;
-    int mMotionViewOriginalTop;
-    int mMotionViewNewTop;
     int mMotionX;
     int mMotionY;
     int mTouchMode = TOUCH_MODE_REST;
@@ -100,20 +99,20 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
     final boolean[] mIsScrap = new boolean[1];
     private int mActivePointerId = INVALID_POINTER;
     private static final int INVALID_POINTER = -1;
-	protected boolean mIsAttached;
-	private Headable mZrcHeader;
-	private Footable mZrcFooter;
-	private OnStartListener onRefreshStart;
-	private OnStartListener onLoadMoreStart;
-	private OnScrollStateListener onScrollStateListener;
-	private int mScrollState = OnScrollStateListener.EDGE;
+    protected boolean mIsAttached;
+    private Headable mZrcHeader;
+    private Footable mZrcFooter;
+    private OnStartListener onRefreshStart;
+    private OnStartListener onLoadMoreStart;
+    private OnScrollStateListener onScrollStateListener;
+    private int mScrollState = OnScrollStateListener.EDGE;
     protected boolean showHeader = false;
-	private boolean isLoadingMore = false;
-	private boolean isLoadMoreOn = false;
-	private boolean isRefreshing = false;
-	protected int mFirstTopOffset = 0;
-	protected int mLastBottomOffset = 0;
-	protected float mDensity = 0;
+    private boolean isLoadingMore = false;
+    private boolean isLoadMoreOn = false;
+    private boolean isRefreshing = false;
+    protected int mFirstTopOffset = 0;
+    protected int mLastBottomOffset = 0;
+    protected float mDensity = 0;
 
     private Runnable mResetRunnable = new Runnable() {
         @Override
@@ -126,24 +125,23 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         super(context);
         initAbsListView();
     }
+
     public ZrcAbsListView(Context context, AttributeSet attrs) {
         this(context, attrs, android.R.attr.absListViewStyle);
     }
+
     public ZrcAbsListView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         initAbsListView();
-        TypedArray a = context.obtainStyledAttributes(attrs,
-                R.styleable.ZrcAbsListView, defStyle, 0);
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ZrcAbsListView, defStyle, 0);
         Drawable d = a.getDrawable(R.styleable.ZrcAbsListView_android_listSelector);
         if (d != null) {
             setSelector(d);
         }
-        mDrawSelectorOnTop = a.getBoolean(
-                R.styleable.ZrcAbsListView_android_drawSelectorOnTop, false);
+        mDrawSelectorOnTop = a.getBoolean(R.styleable.ZrcAbsListView_android_drawSelectorOnTop, false);
         boolean scrollingCacheEnabled = a.getBoolean(R.styleable.ZrcAbsListView_android_scrollingCache, true);
         setScrollingCacheEnabled(scrollingCacheEnabled);
-        int transcriptMode = a.getInt(R.styleable.ZrcAbsListView_android_transcriptMode,
-                TRANSCRIPT_MODE_DISABLED);
+        int transcriptMode = a.getInt(R.styleable.ZrcAbsListView_android_transcriptMode, TRANSCRIPT_MODE_DISABLED);
         setTranscriptMode(transcriptMode);
         int color = a.getColor(R.styleable.ZrcAbsListView_android_cacheColorHint, 0);
         setCacheColorHint(color);
@@ -151,8 +149,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         setSmoothScrollbarEnabled(smoothScrollbar);
         a.recycle();
     }
+
     @TargetApi(Build.VERSION_CODES.GINGERBREAD)
-	private void initAbsListView() {
+    private void initAbsListView() {
         setClickable(true);
         setFocusableInTouchMode(true);
         setWillNotDraw(false);
@@ -164,12 +163,14 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
         mDensity = getResources().getDisplayMetrics().density;
     }
+
     @Override
     public void setAdapter(ListAdapter adapter) {
         if (adapter != null) {
             mAdapterHasStableIds = mAdapter.hasStableIds();
         }
     }
+
     @Override
     public boolean performItemClick(View view, int position, long id) {
         boolean handled = false;
@@ -179,40 +180,49 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return handled;
     }
+
     public void setSmoothScrollbarEnabled(boolean enabled) {
         mSmoothScrollbarEnabled = enabled;
     }
+
     @ViewDebug.ExportedProperty
     public boolean isSmoothScrollbarEnabled() {
         return mSmoothScrollbarEnabled;
     }
+
     public void setOnScrollListener(OnScrollListener l) {
         mOnScrollListener = l;
         invokeOnItemScrollListener();
     }
+
     void invokeOnItemScrollListener() {
         if (mOnScrollListener != null) {
             mOnScrollListener.onScroll(this, mFirstPosition, getChildCount(), mItemCount);
         }
         onScrollChanged(0, 0, 0, 0);
     }
+
     @ViewDebug.ExportedProperty
     public boolean isScrollingCacheEnabled() {
         return mScrollingCacheEnabled;
     }
+
     public void setScrollingCacheEnabled(boolean enabled) {
         if (mScrollingCacheEnabled && !enabled) {
             clearScrollingCache();
         }
         mScrollingCacheEnabled = enabled;
     }
+
     @Override
     public void getFocusedRect(Rect r) {
         super.getFocusedRect(r);
     }
+
     private void useDefaultSelector() {
         setSelector(getResources().getDrawable(android.R.drawable.list_selector_background));
     }
+
     void requestLayoutIfNecessary() {
         if (getChildCount() > 0) {
             resetList();
@@ -220,6 +230,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             invalidate();
         }
     }
+
     @Override
     protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect) {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
@@ -231,29 +242,32 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     @Override
     public void requestLayout() {
         if (!mBlockLayoutRequests && !mInLayout) {
             super.requestLayout();
         }
     }
+
     void resetList() {
         removeAllViewsInLayout();
         mFirstPosition = 0;
-        mFirstTop = 0;
+        mFirstTop = mFirstTopOffset + mListPadding.top;
         mDataChanged = false;
         mPositionScrollAfterLayout = null;
         mSelectorPosition = INVALID_POSITION;
         mSelectorRect.setEmpty();
         invalidate();
     }
+
     @Override
     protected int computeVerticalScrollExtent() {
         final int count = getChildCount();
         if (count > 0) {
             if (mSmoothScrollbarEnabled) {
-            	final int range = (getHeight() - mFirstTopOffset - mLastBottomOffset) * 10;
-            	final int cnt = mItemCount;
+                final int range = (getHeight() - mFirstTopOffset - mLastBottomOffset) * 10;
+                final int cnt = mItemCount;
                 int extent = count * range / cnt;
                 View view = getChildAt(0);
                 final int top = view.getTop();
@@ -274,6 +288,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return 0;
     }
+
     @Override
     protected int computeVerticalScrollOffset() {
         final int firstPosition = mFirstPosition;
@@ -287,8 +302,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 final int range = (getHeight() - mFirstTopOffset - mLastBottomOffset) * 10;
                 final int count = mItemCount;
                 if (height > 0) {
-                    return Math.max((firstPosition * range - top * range / height)/count + mFirstTopOffset*10 +
-                            mScrollY*10, mFirstTopOffset*10);
+                    return Math.max((firstPosition * range - top * range / height) / count + mFirstTopOffset * 10
+                            + mScrollY * 10, mFirstTopOffset * 10);
                 }
             } else {
                 int index;
@@ -305,16 +320,18 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return 0;
     }
+
     @Override
     protected int computeVerticalScrollRange() {
         int result;
         if (mSmoothScrollbarEnabled) {
-            result = Math.max(getHeight()*10, 0);
+            result = Math.max(getHeight() * 10, 0);
         } else {
             result = mItemCount;
         }
         return result;
     }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (mSelector == null) {
@@ -326,6 +343,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         listPadding.right = getPaddingRight();
         listPadding.bottom = getPaddingBottom();
     }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         mInLayout = true;
@@ -339,7 +357,10 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         layoutChildren();
         mInLayout = false;
     }
-    protected void layoutChildren() {}
+
+    protected void layoutChildren() {
+    }
+
     void updateScrollIndicators() {
         if (mScrollUp != null) {
             boolean canScrollUp;
@@ -363,20 +384,25 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mScrollDown.setVisibility(canScrollDown ? View.VISIBLE : View.INVISIBLE);
         }
     }
+
     public int getListPaddingTop() {
         return mListPadding.top;
     }
+
     public int getListPaddingBottom() {
         return mListPadding.bottom;
     }
+
     public int getListPaddingLeft() {
         return mListPadding.left;
     }
+
     public int getListPaddingRight() {
         return mListPadding.right;
     }
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-	View obtainView(int position, boolean[] isScrap) {
+    View obtainView(int position, boolean[] isScrap) {
         isScrap[0] = false;
         View scrapView;
         scrapView = mRecycler.getTransientStateView(position);
@@ -415,6 +441,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return child;
     }
+
     void positionSelector(int position, View sel) {
         if (position != INVALID_POSITION) {
             mSelectorPosition = position;
@@ -428,47 +455,46 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mIsChildViewEnabled = !isChildViewEnabled;
         }
     }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
-    	final Headable zrcHeader = mZrcHeader;
-    	if(zrcHeader!=null && getChildCount()>0){
-    		final int firstPosition = mFirstPosition;
-            final int firstTop = getChildAt(0).getTop();
+        final Headable zrcHeader = mZrcHeader;
+        final int childCount = getChildCount();
+        if (zrcHeader != null) {
+            final int firstPosition = mFirstPosition;
+            final int firstTop = childCount == 0 ? mFirstTop : getChildAt(0).getTop();
             final Rect listPadding = mListPadding;
             final int viewTop = listPadding.top;
-            final boolean needShowHeader = (firstPosition == 0 &&
-                    firstTop >= viewTop);
-            if(needShowHeader){
-        		boolean more = zrcHeader.draw(canvas, listPadding.left,
-        				viewTop + mFirstTopOffset, getWidth() - listPadding.right, firstTop);
+            final boolean needShowHeader = (firstPosition == 0 && firstTop >= viewTop);
+            if (needShowHeader) {
+                boolean more = zrcHeader.draw(canvas, listPadding.left, viewTop + mFirstTopOffset, getWidth()
+                        - listPadding.right, firstTop);
 
-        		if(more){
-        			postInvalidate(listPadding.left,
-        					listPadding.top, getWidth() - listPadding.right, firstTop);
-        		}
-            }
-    	}
-    	final Footable footer = mZrcFooter;
-    	if(getChildCount()>0 && isLoadingMore){
-    		final int firstPosition = mFirstPosition;
-    		final int childCount = getChildCount();
-
-    		if(firstPosition + childCount == mItemCount){
-                final int lastBottom = getChildAt(childCount-1).getBottom();
-                final boolean isTooShort = childCount == mItemCount && lastBottom-mFirstTop-mFirstTopOffset<getHeight();
-                final Rect listPadding = mListPadding;
-                final int viewBottom = getHeight()-listPadding.bottom;
-                if(lastBottom<viewBottom){
-                	boolean more = footer.draw(canvas, listPadding.left,
-            				lastBottom, getWidth() - listPadding.right,
-            				isTooShort ? lastBottom+footer.getHeight() : viewBottom-mLastBottomOffset);
-            		if(more){
-            			postInvalidate(listPadding.left,
-                				listPadding.top, getWidth() - listPadding.right, viewBottom-mLastBottomOffset);
-            		}
+                if (more) {
+                    postInvalidate(listPadding.left, listPadding.top, getWidth() - listPadding.right, firstTop);
                 }
             }
-    	}
+        }
+        final Footable footer = mZrcFooter;
+        if (childCount > 0 && isLoadingMore) {
+            final int firstPosition = mFirstPosition;
+
+            if (firstPosition + childCount == mItemCount) {
+                final int lastBottom = getChildAt(childCount - 1).getBottom();
+                final Rect listPadding = mListPadding;
+                final boolean isTooShort = childCount == mItemCount
+                        && lastBottom - mFirstTop - mFirstTopOffset < getHeight();
+                final int viewBottom = getHeight() - listPadding.bottom;
+                if (lastBottom < viewBottom) {
+                    boolean more = footer.draw(canvas, listPadding.left, lastBottom, getWidth() - listPadding.right,
+                            isTooShort ? lastBottom + footer.getHeight() : viewBottom - mLastBottomOffset);
+                    if (more) {
+                        postInvalidate(listPadding.left, listPadding.top, getWidth() - listPadding.right, viewBottom
+                                - mLastBottomOffset);
+                    }
+                }
+            }
+        }
         final boolean drawSelectorOnTop = mDrawSelectorOnTop;
         if (!drawSelectorOnTop) {
             drawSelector(canvas);
@@ -479,28 +505,34 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             drawSelector(canvas);
         }
     }
-	@Override
+
+    @Override
     protected int getLeftPaddingOffset() {
         return getPaddingLeft();
     }
+
     @Override
     protected int getTopPaddingOffset() {
         return getPaddingTop();
     }
+
     @Override
     protected int getRightPaddingOffset() {
         return getPaddingRight();
     }
+
     @Override
     protected int getBottomPaddingOffset() {
         return getPaddingBottom();
     }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         if (getChildCount() > 0) {
             mDataChanged = true;
         }
     }
+
     boolean touchModeDrawsInPressedState() {
         switch (mTouchMode) {
         case TOUCH_MODE_TAP:
@@ -510,9 +542,11 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             return false;
         }
     }
+
     boolean shouldShowSelector() {
         return (!isInTouchMode()) || (touchModeDrawsInPressedState() && isPressed());
     }
+
     private void drawSelector(Canvas canvas) {
         if (!mSelectorRect.isEmpty()) {
             final Drawable selector = mSelector;
@@ -520,12 +554,15 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             selector.draw(canvas);
         }
     }
+
     public void setDrawSelectorOnTop(boolean onTop) {
         mDrawSelectorOnTop = onTop;
     }
+
     public void setSelector(int resID) {
         setSelector(getResources().getDrawable(resID));
     }
+
     public void setSelector(Drawable sel) {
         if (mSelector != null) {
             mSelector.setCallback(null);
@@ -535,14 +572,18 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         sel.setCallback(this);
         updateSelectorState();
     }
+
     public Drawable getSelector() {
         return mSelector;
     }
+
     public void setScrollIndicators(View up, View down) {
         mScrollUp = up;
         mScrollDown = down;
     }
-    public static final int[] NOTHING = new int[] { 0 };
+
+    public static final int[] NOTHING = new int[] {0};
+
     void updateSelectorState() {
         if (mSelector != null) {
             if (shouldShowSelector()) {
@@ -552,11 +593,13 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     @Override
     protected void drawableStateChanged() {
         super.drawableStateChanged();
         updateSelectorState();
     }
+
     @Override
     protected int[] onCreateDrawableState(int extraSpace) {
         if (mIsChildViewEnabled) {
@@ -572,16 +615,17 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
         if (enabledPos >= 0) {
-            System.arraycopy(state, enabledPos + 1, state, enabledPos,
-                    state.length - enabledPos - 1);
+            System.arraycopy(state, enabledPos + 1, state, enabledPos, state.length - enabledPos - 1);
         }
         return state;
     }
+
     @Override
     public boolean verifyDrawable(Drawable dr) {
         return mSelector == dr || super.verifyDrawable(dr);
     }
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public void jumpDrawablesToCurrentState() {
         super.jumpDrawablesToCurrentState();
@@ -589,6 +633,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mSelector.jumpToCurrentState();
         }
     }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -600,8 +645,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mItemCount = mAdapter.getCount();
         }
         setPressed(false);
-		mIsAttached = true;
+        mIsAttached = true;
     }
+
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
@@ -620,10 +666,11 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             removeCallbacks(mTouchModeReset);
             mTouchModeReset.run();
         }
-		mIsAttached = false;
+        mIsAttached = false;
     }
+
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-	@Override
+    @Override
     public void onWindowFocusChanged(boolean hasWindowFocus) {
         super.onWindowFocusChanged(hasWindowFocus);
         final int touchMode = isInTouchMode() ? TOUCH_MODE_ON : TOUCH_MODE_OFF;
@@ -640,6 +687,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         mLastTouchMode = touchMode;
     }
+
     @Override
     public void onCancelPendingInputEvents() {
         super.onCancelPendingInputEvents();
@@ -647,17 +695,22 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             removeCallbacks(mPerformClick);
         }
     }
+
     private class WindowRunnnable {
         private int mOriginalAttachCount;
+
         public void rememberWindowAttachCount() {
             mOriginalAttachCount = getWindowAttachCount();
         }
+
         public boolean sameWindow() {
             return getWindowAttachCount() == mOriginalAttachCount;
         }
     }
+
     private class PerformClick extends WindowRunnnable implements Runnable {
         int mClickMotionPosition;
+
         @Override
         public void run() {
             if (mDataChanged) {
@@ -665,9 +718,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
             final ListAdapter adapter = mAdapter;
             final int motionPosition = mClickMotionPosition;
-            if (adapter != null && mItemCount > 0 &&
-                    motionPosition != INVALID_POSITION &&
-                    motionPosition < adapter.getCount() && sameWindow()) {
+            if (adapter != null && mItemCount > 0 && motionPosition != INVALID_POSITION
+                    && motionPosition < adapter.getCount() && sameWindow()) {
                 final View view = getChildAt(motionPosition - mFirstPosition);
                 if (view != null) {
                     performItemClick(view, motionPosition, adapter.getItemId(motionPosition));
@@ -675,22 +727,24 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	boolean performLongPress(final View child,
-            final int longPressPosition, final long longPressId) {
+    boolean performLongPress(final View child, final int longPressPosition, final long longPressId) {
         boolean handled = false;
         if (mOnItemLongClickListener != null) {
-            handled = mOnItemLongClickListener.onItemLongClick((ZrcListView)this, child,
-                    longPressPosition, longPressId);
+            handled = mOnItemLongClickListener.onItemLongClick((ZrcListView) this, child, longPressPosition,
+                    longPressId);
         }
         if (handled) {
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         }
         return handled;
     }
+
     @Override
     protected void dispatchSetPressed(boolean pressed) {
     }
+
     public int pointToPosition(int x, int y) {
         Rect frame = mTouchFrame;
         if (frame == null) {
@@ -709,6 +763,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return INVALID_POSITION;
     }
+
     public long pointToRowId(int x, int y) {
         int position = pointToPosition(x, y);
         if (position >= 0) {
@@ -716,6 +771,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return INVALID_ROW_ID;
     }
+
     final class CheckForTap implements Runnable {
         @Override
         public void run() {
@@ -749,37 +805,41 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     private boolean startScrollIfNeeded(int x, int y) {
         final int deltaX = x - mMotionX;
         final int distanceX = Math.abs(deltaX);
         final int deltaY = y - mMotionY;
         final int distanceY = Math.abs(deltaY);
-        if(distanceX > mTouchSlop || distanceY > mTouchSlop){
-	        if (distanceY > distanceX*2) {
-	            createScrollingCache();
-	            mTouchMode = TOUCH_MODE_SCROLL;
-	            mMotionCorrection = deltaY > 0 ? mTouchSlop : -mTouchSlop;
-	            setPressed(false);
-	            final View motionView = getChildAt(mMotionPosition - mFirstPosition);
-	            if (motionView != null) {
-	                motionView.setPressed(false);
-	            }
-	            mSelectorPosition = INVALID_POSITION;
-	            reportScrollStateChange(OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
-	            final ViewParent parent = getParent();
-	            if (parent != null) {
-	                parent.requestDisallowInterceptTouchEvent(true);
-	            }
-	            scrollIfNeeded(x, y);
-	            return true;
-	        }else{
-	        	mTouchMode = TOUCH_MODE_INVALID;
-	        }
+        if (distanceX > mTouchSlop || distanceY > mTouchSlop) {
+            if (distanceY > distanceX * 2) {
+                createScrollingCache();
+                mTouchMode = TOUCH_MODE_SCROLL;
+                mMotionCorrection = deltaY > 0 ? mTouchSlop : -mTouchSlop;
+                setPressed(false);
+                if(getChildCount()>0){
+                    final View motionView = getChildAt(mMotionPosition - mFirstPosition);
+                    if (motionView != null) {
+                        motionView.setPressed(false);
+                    }
+                }
+                mSelectorPosition = INVALID_POSITION;
+                reportScrollStateChange(OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
+                final ViewParent parent = getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
+                scrollIfNeeded(x, y);
+                return true;
+            } else {
+                mTouchMode = TOUCH_MODE_INVALID;
+            }
         }
         return false;
     }
-	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-	private void scrollIfNeeded(int x, int y) {
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    private void scrollIfNeeded(int x, int y) {
         final int rawDeltaY = y - mMotionY;
         final int deltaY = rawDeltaY - mMotionCorrection;
         int incrementalDeltaY = mLastY != Integer.MIN_VALUE ? y - mLastY : deltaY;
@@ -791,33 +851,24 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                         parent.requestDisallowInterceptTouchEvent(true);
                     }
                 }
-                final int motionIndex;
-                if (mMotionPosition >= 0) {
-                    motionIndex = mMotionPosition - mFirstPosition;
-                } else {
-                    motionIndex = getChildCount() / 2;
-                }
-                View motionView = this.getChildAt(motionIndex);
                 boolean atEdge = false;
                 if (incrementalDeltaY != 0) {
                     atEdge = trackMotionScroll(deltaY, incrementalDeltaY);
                 }
-                motionView = this.getChildAt(motionIndex);
-                if (motionView != null) {
-                    if (atEdge) {
-                    	if (mVelocityTracker != null) {
-                            mVelocityTracker.clear();
-                        }
+                if (atEdge) {
+                    if (mVelocityTracker != null) {
+                        mVelocityTracker.clear();
                     }
-                    mMotionX = x;
-                    mMotionY = y;
                 }
+                mMotionX = x;
+                mMotionY = y;
                 mLastY = y;
             }
         }
     }
+
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-	@Override
+    @Override
     public void onTouchModeChanged(boolean isInTouchMode) {
         if (isInTouchMode) {
             if (getHeight() > 0 && getChildCount() > 0) {
@@ -826,6 +877,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             updateSelectorState();
         }
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         if (!isEnabled()) {
@@ -838,56 +890,53 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         mVelocityTracker.addMovement(ev);
         final int actionMasked = ev.getActionMasked();
         switch (actionMasked) {
-            case MotionEvent.ACTION_DOWN: {
-                onTouchDown(ev);
-                break;
+        case MotionEvent.ACTION_DOWN: {
+            onTouchDown(ev);
+            break;
+        }
+        case MotionEvent.ACTION_MOVE: {
+            onTouchMove(ev);
+            break;
+        }
+        case MotionEvent.ACTION_UP: {
+            onTouchUp(ev);
+            break;
+        }
+        case MotionEvent.ACTION_CANCEL: {
+            onTouchCancel();
+            break;
+        }
+        case MotionEvent.ACTION_POINTER_UP: {
+            onSecondaryPointerUp(ev);
+            final int x = mMotionX;
+            final int y = mMotionY;
+            final int motionPosition = pointToPosition(x, y);
+            if (motionPosition >= 0) {
+                mMotionPosition = motionPosition;
             }
-            case MotionEvent.ACTION_MOVE: {
-                onTouchMove(ev);
-                break;
+            mLastY = y;
+            break;
+        }
+        case MotionEvent.ACTION_POINTER_DOWN: {
+            final int index = ev.getActionIndex();
+            final int id = ev.getPointerId(index);
+            final int x = (int) ev.getX(index);
+            final int y = (int) ev.getY(index);
+            mMotionCorrection = 0;
+            mActivePointerId = id;
+            mMotionX = x;
+            mMotionY = y;
+            final int motionPosition = pointToPosition(x, y);
+            if (motionPosition >= 0) {
+                mMotionPosition = motionPosition;
             }
-            case MotionEvent.ACTION_UP: {
-                onTouchUp(ev);
-                break;
-            }
-            case MotionEvent.ACTION_CANCEL: {
-                onTouchCancel();
-                break;
-            }
-            case MotionEvent.ACTION_POINTER_UP: {
-                onSecondaryPointerUp(ev);
-                final int x = mMotionX;
-                final int y = mMotionY;
-                final int motionPosition = pointToPosition(x, y);
-                if (motionPosition >= 0) {
-                    final View child = getChildAt(motionPosition - mFirstPosition);
-                    mMotionViewOriginalTop = child.getTop();
-                    mMotionPosition = motionPosition;
-                }
-                mLastY = y;
-                break;
-            }
-            case MotionEvent.ACTION_POINTER_DOWN: {
-                final int index = ev.getActionIndex();
-                final int id = ev.getPointerId(index);
-                final int x = (int) ev.getX(index);
-                final int y = (int) ev.getY(index);
-                mMotionCorrection = 0;
-                mActivePointerId = id;
-                mMotionX = x;
-                mMotionY = y;
-                final int motionPosition = pointToPosition(x, y);
-                if (motionPosition >= 0) {
-                    final View child = getChildAt(motionPosition - mFirstPosition);
-                    mMotionViewOriginalTop = child.getTop();
-                    mMotionPosition = motionPosition;
-                }
-                mLastY = y;
-                break;
-            }
+            mLastY = y;
+            break;
+        }
         }
         return true;
     }
+
     private void onTouchDown(MotionEvent ev) {
         mActivePointerId = ev.getPointerId(0);
         final int x = (int) ev.getX();
@@ -906,24 +955,21 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                     mPendingCheckForTap = new CheckForTap();
                 }
                 postDelayed(mPendingCheckForTap, ViewConfiguration.getTapTimeout());
-            } else{
-            	createScrollingCache();
-            	mTouchMode = TOUCH_MODE_SCROLL;
-            	mMotionCorrection = 0;
-            	motionPosition = findMotionRow(y);
+            } else {
+                createScrollingCache();
+                mTouchMode = TOUCH_MODE_SCROLL;
+                mMotionCorrection = 0;
+                motionPosition = findMotionRow(y);
             }
-        }
-        if (motionPosition >= 0) {
-            final View v = getChildAt(motionPosition - mFirstPosition);
-            mMotionViewOriginalTop = v.getTop();
         }
         mMotionX = x;
         mMotionY = y;
         mMotionPosition = motionPosition;
         mLastY = Integer.MIN_VALUE;
     }
+
     private void onTouchMove(MotionEvent ev) {
-    	if(mTouchMode==TOUCH_MODE_INVALID) {
+        if (mTouchMode == TOUCH_MODE_INVALID) {
             mTouchMode = TOUCH_MODE_SCROLL;
         }
         int pointerIndex = ev.findPointerIndex(mActivePointerId);
@@ -937,23 +983,24 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         final int x = (int) ev.getX(pointerIndex);
         final int y = (int) ev.getY(pointerIndex);
         switch (mTouchMode) {
-            case TOUCH_MODE_DOWN:
-            case TOUCH_MODE_TAP:
-            case TOUCH_MODE_DONE_WAITING:
-                startScrollIfNeeded(x, y);
-                break;
-            case TOUCH_MODE_SCROLL:
-                scrollIfNeeded(x, y);
-                break;
+        case TOUCH_MODE_DOWN:
+        case TOUCH_MODE_TAP:
+        case TOUCH_MODE_DONE_WAITING:
+            startScrollIfNeeded(x, y);
+            break;
+        case TOUCH_MODE_SCROLL:
+            scrollIfNeeded(x, y);
+            break;
         }
     }
+
     private void onTouchUp(MotionEvent ev) {
         switch (mTouchMode) {
         case TOUCH_MODE_DOWN:
         case TOUCH_MODE_TAP:
         case TOUCH_MODE_DONE_WAITING:
             final int motionPosition = mMotionPosition;
-            final View child = getChildAt(motionPosition - mFirstPosition);
+            final View child = getChildCount()==0 ? null : getChildAt(motionPosition - mFirstPosition);
             if (child != null) {
                 if (mTouchMode != TOUCH_MODE_DOWN) {
                     child.setPressed(false);
@@ -971,7 +1018,6 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                         mLayoutMode = LAYOUT_NORMAL;
                         if (!mDataChanged && mAdapter.isEnabled(motionPosition)) {
                             mTouchMode = TOUCH_MODE_TAP;
-                            //layoutChildren();
                             child.setPressed(true);
                             positionSelector(mMotionPosition, child);
                             setPressed(true);
@@ -997,8 +1043,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                                     }
                                 }
                             };
-                            postDelayed(mTouchModeReset,
-                                    ViewConfiguration.getPressedStateDuration());
+                            postDelayed(mTouchModeReset, ViewConfiguration.getPressedStateDuration());
                         } else {
                             mTouchMode = TOUCH_MODE_REST;
                             updateSelectorState();
@@ -1013,33 +1058,26 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             updateSelectorState();
             break;
         case TOUCH_MODE_SCROLL:
-            final int childCount = getChildCount();
-            if (childCount > 0) {
-            	if(mFlingRunnable==null){
-            		mFlingRunnable = new FlingRunnable();
-            	}
-            	if(!mFlingRunnable.scrollToAdjustViewsUpOrDown()){
-                    final VelocityTracker velocityTracker = mVelocityTracker;
-                    velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
-                    final int initialVelocity = (int)
-                            (velocityTracker.getYVelocity(mActivePointerId) * mVelocityScale);
-                    if (Math.abs(initialVelocity) > mMinimumVelocity ){
-                        if (mFlingRunnable == null) {
-                            mFlingRunnable = new FlingRunnable();
-                        }
-                        reportScrollStateChange(OnScrollListener.SCROLL_STATE_FLING);
-                        mFlingRunnable.start(-initialVelocity);
-                    } else {
-                        mTouchMode = TOUCH_MODE_REST;
-                        reportScrollStateChange(OnScrollListener.SCROLL_STATE_IDLE);
-                        if (mFlingRunnable != null) {
-                            mFlingRunnable.endFling();
-                        }
+            if (mFlingRunnable == null) {
+                mFlingRunnable = new FlingRunnable();
+            }
+            if (!mFlingRunnable.scrollToAdjustViewsUpOrDown()) {
+                final VelocityTracker velocityTracker = mVelocityTracker;
+                velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+                final int initialVelocity = (int) (velocityTracker.getYVelocity(mActivePointerId) * mVelocityScale);
+                if (Math.abs(initialVelocity) > mMinimumVelocity) {
+                    if (mFlingRunnable == null) {
+                        mFlingRunnable = new FlingRunnable();
+                    }
+                    reportScrollStateChange(OnScrollListener.SCROLL_STATE_FLING);
+                    mFlingRunnable.start(-initialVelocity);
+                } else {
+                    mTouchMode = TOUCH_MODE_REST;
+                    reportScrollStateChange(OnScrollListener.SCROLL_STATE_IDLE);
+                    if (mFlingRunnable != null) {
+                        mFlingRunnable.endFling();
                     }
                 }
-            } else {
-                mTouchMode = TOUCH_MODE_REST;
-                reportScrollStateChange(OnScrollListener.SCROLL_STATE_IDLE);
             }
             break;
         }
@@ -1048,12 +1086,13 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         recycleVelocityTracker();
         mActivePointerId = INVALID_POINTER;
     }
+
     private void onTouchCancel() {
         switch (mTouchMode) {
         default:
             mTouchMode = TOUCH_MODE_REST;
             setPressed(false);
-            final View motionView = this.getChildAt(mMotionPosition - mFirstPosition);
+            final View motionView = getChildCount() == 0 ? null : this.getChildAt(mMotionPosition - mFirstPosition);
             if (motionView != null) {
                 motionView.setPressed(false);
             }
@@ -1064,49 +1103,55 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         invalidate();
         mActivePointerId = INVALID_POINTER;
     }
-	protected void invalidateParentIfNeeded() {
-		if (getParent() instanceof View ) {
-			( (View) getParent() ).invalidate();
-		}
-	}
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+
+    protected void invalidateParentIfNeeded() {
+        if (getParent() instanceof View) {
+            ((View) getParent()).invalidate();
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
-    	if(APIUtil.isSupport(12)){
-	        if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0) {
-	            switch (event.getAction()) {
-	                case MotionEvent.ACTION_SCROLL: {
-	                    if (mTouchMode == TOUCH_MODE_REST) {
-	                        final float vscroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
-	                        if (vscroll != 0) {
-	                            final int delta = (int) (vscroll * getVerticalScrollFactor());
-	                            if (!trackMotionScroll(delta, delta)) {
-	                                return true;
-	                            }
-	                        }
-	                    }
-	                }
-	            }
-	        }
-    	}
+        if (APIUtil.isSupport(12)) {
+            if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0) {
+                switch (event.getAction()) {
+                case MotionEvent.ACTION_SCROLL: {
+                    if (mTouchMode == TOUCH_MODE_REST) {
+                        final float vscroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+                        if (vscroll != 0) {
+                            final int delta = (int) (vscroll * getVerticalScrollFactor());
+                            if (!trackMotionScroll(delta, delta)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                }
+            }
+        }
         return super.onGenericMotionEvent(event);
     }
-	private float mVerticalScrollFactor;
+
+    private float mVerticalScrollFactor;
+
     protected float getVerticalScrollFactor() {
         if (mVerticalScrollFactor == 0) {
-        	mVerticalScrollFactor = 64 * getResources().getDisplayMetrics().density;
+            mVerticalScrollFactor = 64 * getResources().getDisplayMetrics().density;
         }
         return mVerticalScrollFactor;
     }
+
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-	@Override
-    public void setScrollY(int y){
-    	if(APIUtil.isSupport(14)){
-    		super.setScrollY(y);
-    	}else{
-    		scrollTo(getScrollX(), y);
-    	}
+    @Override
+    public void setScrollY(int y) {
+        if (APIUtil.isSupport(14)) {
+            super.setScrollY(y);
+        } else {
+            scrollTo(getScrollX(), y);
+        }
     }
+
     private void initOrResetVelocityTracker() {
         if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
@@ -1114,17 +1159,20 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mVelocityTracker.clear();
         }
     }
+
     private void initVelocityTrackerIfNotExists() {
         if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
         }
     }
+
     private void recycleVelocityTracker() {
         if (mVelocityTracker != null) {
             mVelocityTracker.recycle();
             mVelocityTracker = null;
         }
     }
+
     @Override
     public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
         if (disallowIntercept) {
@@ -1132,11 +1180,11 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         super.requestDisallowInterceptTouchEvent(disallowIntercept);
     }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         int action = ev.getAction();
-        View v;
-        if (!mIsAttached ) {
+        if (!mIsAttached) {
             return false;
         }
         switch (action & MotionEvent.ACTION_MASK) {
@@ -1147,8 +1195,6 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mActivePointerId = ev.getPointerId(0);
             int motionPosition = findMotionRow(y);
             if (touchMode != TOUCH_MODE_FLING && touchMode != TOUCH_MODE_RESCROLL && motionPosition >= 0) {
-                v = getChildAt(motionPosition - mFirstPosition);
-                mMotionViewOriginalTop = v.getTop();
                 mMotionPosition = motionPosition;
                 mTouchMode = TOUCH_MODE_DOWN;
                 clearScrollingCache();
@@ -1164,7 +1210,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             break;
         }
         case MotionEvent.ACTION_MOVE: {
-            if(mTouchMode==TOUCH_MODE_INVALID) {
+            if (mTouchMode == TOUCH_MODE_INVALID) {
                 return false;
             }
             switch (mTouchMode) {
@@ -1200,9 +1246,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
         return false;
     }
+
     private void onSecondaryPointerUp(MotionEvent ev) {
-        final int pointerIndex = (ev.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >>
-                MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+        final int pointerIndex = (ev.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
         final int pointerId = ev.getPointerId(pointerIndex);
         if (pointerId == mActivePointerId) {
             final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
@@ -1212,6 +1258,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mActivePointerId = ev.getPointerId(newPointerIndex);
         }
     }
+
     @Override
     public void addTouchables(ArrayList<View> views) {
         final int count = getChildCount();
@@ -1228,6 +1275,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             child.addTouchables(views);
         }
     }
+
     void reportScrollStateChange(int newState) {
         if (newState != mLastScrollState) {
             if (mOnScrollListener != null) {
@@ -1236,8 +1284,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
-    protected void scrollToAdjustViewsUpOrDown(){
-        if(mFlingRunnable!=null){
+
+    protected void scrollToAdjustViewsUpOrDown() {
+        if (mFlingRunnable != null) {
             mFlingRunnable.scrollToAdjustViewsUpOrDown();
         }
     }
@@ -1245,28 +1294,30 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
     private class FlingRunnable implements Runnable {
         private final Scroller mScroller;
         private int mLastFlingY;
+
         FlingRunnable() {
             mScroller = new Scroller(getContext(), new Interpolator() {
-				@Override
-				public float getInterpolation(float t) {
-					t-=1;
-					return t*t*t*t*t+1;
-				}
-			});
+                @Override
+                public float getInterpolation(float t) {
+                    t -= 1;
+                    return t * t * t * t * t + 1;
+                }
+            });
         }
+
         void start(int initialVelocity) {
-        	if(!mScroller.isFinished()) {
+            if (!mScroller.isFinished()) {
                 mScroller.abortAnimation();
             }
             int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
             mLastFlingY = initialY;
-            mScroller.fling(0, initialY, 0, initialVelocity,
-                    0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
+            mScroller.fling(0, initialY, 0, initialVelocity, 0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
             mTouchMode = TOUCH_MODE_FLING;
             ViewCompat.postOnAnimation(ZrcAbsListView.this, this);
         }
+
         void startScroll(int distance, int duration, boolean linear) {
-        	if(!mScroller.isFinished()) {
+            if (!mScroller.isFinished()) {
                 mScroller.abortAnimation();
             }
             int initialY = distance < 0 ? Integer.MAX_VALUE : 0;
@@ -1275,69 +1326,69 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mTouchMode = TOUCH_MODE_FLING;
             ViewCompat.postOnAnimation(ZrcAbsListView.this, this);
         }
+
         void endFling() {
-        	int oldTouchMode = mTouchMode;
+            int oldTouchMode = mTouchMode;
             mTouchMode = TOUCH_MODE_REST;
             removeCallbacks(this);
             reportScrollStateChange(OnScrollListener.SCROLL_STATE_IDLE);
             clearScrollingCache();
             mScroller.abortAnimation();
 
-            if(mZrcHeader!=null && oldTouchMode == TOUCH_MODE_RESCROLL &&
-            		mZrcHeader.getState()==Headable.STATE_RELEASE){
-            	scrollToAdjustViewsUpOrDown();
+            if (mZrcHeader != null && oldTouchMode == TOUCH_MODE_RESCROLL
+                    && mZrcHeader.getState() == Headable.STATE_RELEASE) {
+                scrollToAdjustViewsUpOrDown();
             }
         }
-        boolean scrollToAdjustViewsUpOrDown(){
+
+        boolean scrollToAdjustViewsUpOrDown() {
             final int firstPosition = mFirstPosition;
             final int childCount = getChildCount();
-            if(childCount==0) {
-                return false;
-            }
-            final int firstTop = getChildAt(0).getTop();
-            int lastBottom = getChildAt(getChildCount() - 1).getBottom();
-            if(firstPosition + childCount >= mItemCount - 1){
-                if(!isRefreshing && !isLoadingMore && isLoadMoreOn && onLoadMoreStart!=null){
+            final int firstTop = childCount == 0 ? mFirstTop : getChildAt(0).getTop();
+            int lastBottom = childCount == 0 ? firstTop : getChildAt(childCount - 1).getBottom();
+            if (firstPosition + childCount >= mItemCount - 1) {
+                if (!isRefreshing && !isLoadingMore && isLoadMoreOn && onLoadMoreStart != null) {
                     isLoadingMore = true;
                     onLoadMoreStart.onStart();
                 }
             }
-            if(isLoadingMore){
-        		lastBottom += mZrcFooter.getHeight();
-        	}
+            if (isLoadingMore) {
+                lastBottom += mZrcFooter.getHeight();
+            }
             final Rect listPadding = mListPadding;
             final Headable zrcHeader = mZrcHeader;
-            final boolean isOnLoading = zrcHeader!=null && zrcHeader.getState()==Headable.STATE_LOADING;
-            final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (showHeader?zrcHeader.getHeight():0));
+            final boolean isOnLoading = zrcHeader != null && zrcHeader.getState() == Headable.STATE_LOADING;
+            final int topOffset = firstTop
+                    - (listPadding.top + mFirstTopOffset + (showHeader ? zrcHeader.getHeight() : 0));
             final boolean cannotScrollDown = (firstPosition == 0 && topOffset > 0);
-            final boolean isTooShort = childCount == mItemCount && lastBottom-firstTop<getHeight();
-            final int bottomOffset = isTooShort?firstTop-listPadding.top-mFirstTopOffset:lastBottom - getHeight() + listPadding.bottom+mLastBottomOffset;
-            final boolean cannotScrollUp = firstPosition + childCount == mItemCount &&
-            		bottomOffset < 0;
-            if(cannotScrollDown){
-            	int duration = mFirstTopOffset + listPadding.top - firstTop;
-                if(zrcHeader!=null && onRefreshStart!=null && zrcHeader.getState()==Headable.STATE_RELEASE || isOnLoading){
-                	if(!isOnLoading){
-                	    isRefreshing = true;
+            final boolean isTooShort = childCount == mItemCount && lastBottom - firstTop < getHeight();
+            final int bottomOffset = isTooShort ? firstTop - listPadding.top - mFirstTopOffset : lastBottom
+                    - getHeight() + listPadding.bottom + mLastBottomOffset;
+            final boolean cannotScrollUp = firstPosition + childCount == mItemCount && bottomOffset < 0;
+            if (cannotScrollDown) {
+                int duration = mFirstTopOffset + listPadding.top - firstTop;
+                if ((zrcHeader != null && onRefreshStart != null && zrcHeader.getState() == Headable.STATE_RELEASE)
+                        || showHeader) {
+                    if (!isOnLoading) {
+                        isRefreshing = true;
                         showHeader = true;
-                		zrcHeader.stateChange(Headable.STATE_LOADING, null);
-                    	onRefreshStart.onStart();
-                	}
-                	duration += zrcHeader.getHeight();
-                	startScroll(-duration, (int) Math.abs(duration/mDensity)+50, true);
-                }else{
-                	startScroll(-duration, (int) Math.abs(duration/mDensity)+50, true);
+                        zrcHeader.stateChange(Headable.STATE_LOADING, null);
+                        onRefreshStart.onStart();
+                    }
+                    duration += zrcHeader.getHeight();
                 }
+                startScroll(-duration, (int) Math.abs(duration / mDensity) + 50, true);
                 mTouchMode = TOUCH_MODE_RESCROLL;
-            }else if(cannotScrollUp){
-            	int duration = bottomOffset;
-            	startScroll(duration, (int) Math.abs(duration/mDensity)+50, true);
+            } else if (cannotScrollUp) {
+                int duration = bottomOffset;
+                startScroll(duration, (int) Math.abs(duration / mDensity) + 50, true);
                 mTouchMode = TOUCH_MODE_RESCROLL;
-            }else{
+            } else {
                 return false;
             }
             return true;
         }
+
         @Override
         public void run() {
             switch (mTouchMode) {
@@ -1353,10 +1404,6 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 if (mDataChanged) {
                     layoutChildren();
                 }
-                if (mItemCount == 0 || getChildCount() == 0) {
-                    endFling();
-                    return;
-                }
                 final Scroller scroller = mScroller;
                 boolean more = scroller.computeScrollOffset();
                 final int y = scroller.getCurrY();
@@ -1365,14 +1412,10 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 int delta = mLastFlingY - y;
                 if (delta > 0) {
                     mMotionPosition = mFirstPosition;
-                    final View firstView = getChildAt(0);
-                    mMotionViewOriginalTop = firstView.getTop();
                     delta = Math.min(getHeight() - mPaddingBottom - mPaddingTop - 1, delta);
                 } else {
                     int offsetToLast = getChildCount() - 1;
                     mMotionPosition = mFirstPosition + offsetToLast;
-                    final View lastView = getChildAt(offsetToLast);
-                    mMotionViewOriginalTop = lastView.getTop();
                     delta = Math.max(-(getHeight() - mPaddingBottom - mPaddingTop - 1), delta);
                 }
                 final boolean atEdge = trackMotionScroll(delta, delta);
@@ -1380,7 +1423,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 final int touchMode = mTouchMode;
                 if (atEnd) {
                     endFling();
-                    if(touchMode == TOUCH_MODE_FLING) {
+                    if (touchMode == TOUCH_MODE_FLING) {
                         scrollToAdjustViewsUpOrDown();
                     }
                     break;
@@ -1390,7 +1433,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                     ViewCompat.postOnAnimation(ZrcAbsListView.this, this);
                 } else {
                     endFling();
-                    if(touchMode == TOUCH_MODE_FLING) {
+                    if (touchMode == TOUCH_MODE_FLING) {
                         scrollToAdjustViewsUpOrDown();
                     }
                 }
@@ -1399,18 +1442,22 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     public void setFriction(float friction) {
         if (mFlingRunnable == null) {
             mFlingRunnable = new FlingRunnable();
         }
         mFlingRunnable.mScroller.setFriction(friction);
     }
+
     public void setVelocityScale(float scale) {
         mVelocityScale = scale;
     }
+
     public void smoothScrollBy(int distance, int duration) {
         smoothScrollBy(distance, duration, false);
     }
+
     void smoothScrollBy(int distance, int duration, boolean linear) {
         if (mFlingRunnable == null) {
             mFlingRunnable = new FlingRunnable();
@@ -1420,17 +1467,17 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         final int lastPos = firstPos + childCount;
         final int topLimit = getPaddingTop();
         final int bottomLimit = getHeight() - getPaddingBottom();
-        if (distance == 0 || mItemCount == 0 || childCount == 0 ||
-                (firstPos == 0 && getChildAt(0).getTop() == topLimit && distance < 0) ||
-                (lastPos == mItemCount &&
-                        getChildAt(childCount - 1).getBottom() == bottomLimit && distance > 0)) {
+        if (distance == 0 || mItemCount == 0 || childCount == 0
+                || (firstPos == 0 && getChildAt(0).getTop() == topLimit && distance < 0)
+                || (lastPos == mItemCount && getChildAt(childCount - 1).getBottom() == bottomLimit && distance > 0)) {
             mFlingRunnable.endFling();
         } else {
             reportScrollStateChange(OnScrollListener.SCROLL_STATE_FLING);
             mFlingRunnable.startScroll(distance, duration, linear);
         }
     }
-	private void createScrollingCache() {
+
+    private void createScrollingCache() {
         if (mScrollingCacheEnabled && !mCachingStarted && !isSupportHardwareAccelerated()) {
             setChildrenDrawnWithCacheEnabled(true);
             setChildrenDrawingCacheEnabled(true);
@@ -1438,8 +1485,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         }
     }
 
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	private void clearScrollingCache() {
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    private void clearScrollingCache() {
         if (!isSupportHardwareAccelerated()) {
             if (mClearScrollingCache == null) {
                 mClearScrollingCache = new Runnable() {
@@ -1461,9 +1508,11 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             post(mClearScrollingCache);
         }
     }
+
     public void scrollListBy(int y) {
         trackMotionScroll(-y, -y);
     }
+
     public boolean canScrollList(int direction) {
         final int childCount = getChildCount();
         if (childCount == 0) {
@@ -1480,22 +1529,20 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             return firstPosition > 0 || firstTop < listPadding.top + mFirstTopOffset;
         }
     }
+
     boolean trackMotionScroll(int deltaY, int incrementalDeltaY) {
         final int childCount = getChildCount();
-        if (childCount == 0) {
-            return true;
-        }
         final int firstPosition = mFirstPosition;
-        final int firstTop = getChildAt(0).getTop();
-        int lastBottom = getChildAt(childCount - 1).getBottom();
-        if(firstPosition + childCount >= mItemCount - 1){
-        	if(!isRefreshing && !isLoadingMore && isLoadMoreOn && onLoadMoreStart!=null){
-        		isLoadingMore = true;
-        		onLoadMoreStart.onStart();
-        	}
-        	if(isLoadingMore){
-        		lastBottom += mZrcFooter.getHeight();
-        	}
+        final int firstTop = childCount == 0 ? mFirstTop : getChildAt(0).getTop();
+        int lastBottom = childCount == 0 ? firstTop : getChildAt(childCount - 1).getBottom();
+        if (firstPosition + childCount >= mItemCount - 1) {
+            if (!isRefreshing && !isLoadingMore && isLoadMoreOn && onLoadMoreStart != null) {
+                isLoadingMore = true;
+                onLoadMoreStart.onStart();
+            }
+        }
+        if (isLoadingMore) {
+            lastBottom += mZrcFooter.getHeight();
         }
         final int mPaddingBottom = getPaddingBottom();
         final int mPaddingTop = getPaddingTop();
@@ -1512,99 +1559,98 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             incrementalDeltaY = Math.min(height - 1, incrementalDeltaY);
         }
         final Headable zrcHeader = mZrcHeader;
-        final boolean isTooShort = childCount == mItemCount && lastBottom-firstTop<getHeight();
-        final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (showHeader?zrcHeader.getHeight():0));
-        final int bottomOffset = isTooShort?firstTop-listPadding.top:lastBottom - getHeight() + listPadding.bottom+ mLastBottomOffset;
-        final boolean isOutOfTop = firstPosition == 0 &&
-                topOffset > 0;
-        final boolean isOutOfBottom = firstPosition + childCount == mItemCount &&
-        		bottomOffset < 0;
+        final boolean isTooShort = childCount == mItemCount && lastBottom - firstTop < getHeight();
+        final int topOffset = firstTop - (listPadding.top + mFirstTopOffset + (showHeader ? zrcHeader.getHeight() : 0));
+        final int bottomOffset = isTooShort ? firstTop - listPadding.top : lastBottom - getHeight()
+                + listPadding.bottom + mLastBottomOffset;
+        final boolean isOutOfTop = firstPosition == 0 && topOffset > 0;
+        final boolean isOutOfBottom = firstPosition + childCount == mItemCount && bottomOffset < 0;
         final boolean cannotScrollDown = (isOutOfTop && incrementalDeltaY > 0);
         final boolean cannotScrollUp = (isOutOfBottom && incrementalDeltaY <= 0);
-        if(isTooShort && cannotScrollDown && mTouchMode == TOUCH_MODE_RESCROLL){
-        	mTouchMode = TOUCH_MODE_FLING;
-        	return true;
+        if (isTooShort && cannotScrollDown && mTouchMode == TOUCH_MODE_RESCROLL) {
+            mTouchMode = TOUCH_MODE_FLING;
+            return true;
         }
+        Log.d("zz", showHeader +"?");
         if (isOutOfTop || isOutOfBottom) {
-    		if(mTouchMode==TOUCH_MODE_SCROLL){
-        		incrementalDeltaY /=1.7f;
-        		final int state = zrcHeader.getState();
-    			if(zrcHeader!=null && isOutOfTop){
-	        		if(topOffset>=zrcHeader.getHeight()){
-	        			if(state==Headable.STATE_PULL) {
+            if (mTouchMode == TOUCH_MODE_SCROLL) {
+                incrementalDeltaY /= 1.7f;
+                final int state = zrcHeader.getState();
+                if (zrcHeader != null && isOutOfTop) {
+                    if (topOffset >= zrcHeader.getHeight()) {
+                        if (state == Headable.STATE_PULL) {
                             zrcHeader.stateChange(Headable.STATE_RELEASE, null);
                         }
-	        		}else{
-	        			if(state==Headable.STATE_RELEASE
-	        					|| state==Headable.STATE_REST) {
+                    } else {
+                        if (state == Headable.STATE_RELEASE || state == Headable.STATE_REST) {
                             zrcHeader.stateChange(Headable.STATE_PULL, null);
                         }
-	        		}
-    			}
-    		}
-    		if(mTouchMode==TOUCH_MODE_RESCROLL){
-    			if(isOutOfTop && zrcHeader!=null){
-	        		final int state = zrcHeader.getState();
-                	if(topOffset<10 && (state==Headable.STATE_SUCCESS || state==Headable.STATE_FAIL)){
-                		zrcHeader.stateChange(Headable.STATE_REST, null);
+                    }
+                }
+            }
+            if (mTouchMode == TOUCH_MODE_RESCROLL) {
+                if (isOutOfTop && zrcHeader != null) {
+                    final int state = zrcHeader.getState();
+                    if (topOffset < 10 && (state == Headable.STATE_SUCCESS || state == Headable.STATE_FAIL)) {
+                        zrcHeader.stateChange(Headable.STATE_REST, null);
                         removeCallbacks(mResetRunnable);
-                	}
-    			}
-    		}
-    		if(mTouchMode==TOUCH_MODE_FLING){
-    			if(cannotScrollDown){
-	        		incrementalDeltaY /=1.7f;
-	        		int duration = firstTop - listPadding.top;
-	        		if(duration > getHeight() / 6){
-	        			return true;
-	        		}
-	        	}else if(cannotScrollUp && !isOutOfTop){
-	        		incrementalDeltaY /=1.7f;
-	        		int duration = bottomOffset;
-	        		if(duration < -getHeight() / 6){
-	        			return true;
-	        		}
-	        	}
-    		} else {
-                if(incrementalDeltaY>0){
+                    }
+                }
+            }
+            if (mTouchMode == TOUCH_MODE_FLING) {
+                if (cannotScrollDown) {
+                    incrementalDeltaY /= 1.7f;
                     int duration = firstTop - listPadding.top;
-                    if(duration > getHeight() / 2){
+                    if (duration > getHeight() / 6) {
                         return true;
                     }
-                }else if(incrementalDeltaY<0 && !isOutOfTop){
+                } else if (cannotScrollUp && !isOutOfTop) {
+                    incrementalDeltaY /= 1.7f;
                     int duration = bottomOffset;
-                    if(duration < -getHeight() / 2){
+                    if (duration < -getHeight() / 6) {
                         return true;
                     }
                 }
-    		}
-    		if(onScrollStateListener!=null){
-    			if(mScrollState!=OnScrollStateListener.EDGE){
-    				mScrollState = OnScrollStateListener.EDGE;
-        			onScrollStateListener.onChange(OnScrollStateListener.EDGE);
-    			}
-    		}
-        }else{
-        	if(zrcHeader!=null){
-        		if(zrcHeader.getState()==Headable.STATE_PULL){
-            		zrcHeader.stateChange(Headable.STATE_REST, null);
-        		}
-        	}
-        	if(incrementalDeltaY>5){
-        		if(onScrollStateListener!=null){
-        			if(mScrollState!=OnScrollStateListener.UP){
-        				mScrollState = OnScrollStateListener.UP;
-            			onScrollStateListener.onChange(OnScrollStateListener.UP);
-        			}
-        		}
-        	}else if(incrementalDeltaY<-5){
-        		if(onScrollStateListener!=null){
-        			if(mScrollState!=OnScrollStateListener.DOWN){
-        				mScrollState = OnScrollStateListener.DOWN;
-            			onScrollStateListener.onChange(OnScrollStateListener.DOWN);
-        			}
-        		}
-        	}
+            } else {
+                if (incrementalDeltaY > 0) {
+                    int duration = firstTop - listPadding.top;
+                    if (duration > getHeight() / 2) {
+                        return true;
+                    }
+                } else if (incrementalDeltaY < 0 && !isOutOfTop) {
+                    int duration = bottomOffset;
+                    if (duration < -getHeight() / 2) {
+                        return true;
+                    }
+                }
+            }
+            if (onScrollStateListener != null) {
+                if (mScrollState != OnScrollStateListener.EDGE) {
+                    mScrollState = OnScrollStateListener.EDGE;
+                    onScrollStateListener.onChange(OnScrollStateListener.EDGE);
+                }
+            }
+        } else {
+            if (zrcHeader != null) {
+                if (zrcHeader.getState() == Headable.STATE_PULL) {
+                    zrcHeader.stateChange(Headable.STATE_REST, null);
+                }
+            }
+            if (incrementalDeltaY > 5) {
+                if (onScrollStateListener != null) {
+                    if (mScrollState != OnScrollStateListener.UP) {
+                        mScrollState = OnScrollStateListener.UP;
+                        onScrollStateListener.onChange(OnScrollStateListener.UP);
+                    }
+                }
+            } else if (incrementalDeltaY < -5) {
+                if (onScrollStateListener != null) {
+                    if (mScrollState != OnScrollStateListener.DOWN) {
+                        mScrollState = OnScrollStateListener.DOWN;
+                        onScrollStateListener.onChange(OnScrollStateListener.DOWN);
+                    }
+                }
+            }
         }
         final boolean down = incrementalDeltaY < 0;
         final int headerViewsCount = getHeaderViewsCount();
@@ -1641,17 +1687,15 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
-        mMotionViewNewTop = mMotionViewOriginalTop + incrementalDeltaY;
         mBlockLayoutRequests = true;
         if (count > 0) {
             detachViewsFromParent(start, count);
             mRecycler.removeSkippedScrap();
         }
         if (!awakenScrollBars()) {
-           invalidate();
+            invalidate();
         }
         offsetChildrenTopAndBottom(incrementalDeltaY);
-        //mFirstTop = firstTop - mListPadding.top + incrementalDeltaY;
         if (down) {
             mFirstPosition += count;
         }
@@ -1659,7 +1703,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         if (spaceAbove < absIncrementalDeltaY || spaceBelow < absIncrementalDeltaY) {
             fillGap(down);
         }
-        mFirstTop = getChildAt(0).getTop() - mListPadding.top - mFirstTopOffset;
+
+        mFirstTop = childCount == 0 ? mFirstTop + incrementalDeltaY : getChildAt(0).getTop();
         if (mSelectorPosition != INVALID_POSITION) {
             final int childIndex = mSelectorPosition - mFirstPosition;
             if (childIndex >= 0 && childIndex < getChildCount()) {
@@ -1672,21 +1717,27 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         invokeOnItemScrollListener();
         return false;
     }
-	public void offsetChildrenTopAndBottom( int offset ) {
-		final int count = getChildCount();
-		for ( int i = 0; i < count; i++ ) {
-			final View v = getChildAt( i );
-			v.offsetTopAndBottom( offset );
-		}
-	}
+
+    public void offsetChildrenTopAndBottom(int offset) {
+        final int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            final View v = getChildAt(i);
+            v.offsetTopAndBottom(offset);
+        }
+    }
+
     int getHeaderViewsCount() {
         return 0;
     }
+
     int getFooterViewsCount() {
         return 0;
     }
+
     abstract void fillGap(boolean down);
+
     abstract int findMotionRow(int y);
+
     int findClosestMotionRow(int y) {
         final int childCount = getChildCount();
         if (childCount == 0) {
@@ -1695,16 +1746,20 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         final int motionRow = findMotionRow(y);
         return motionRow != INVALID_POSITION ? motionRow : mFirstPosition + childCount - 1;
     }
+
     public void invalidateViews() {
         mDataChanged = true;
         requestLayout();
         invalidate();
     }
+
     protected void handleDataChanged() {
         mRecycler.clearTransientStateViews();
-        //mLayoutMode = mStackFromBottom ? LAYOUT_FORCE_BOTTOM : LAYOUT_FORCE_TOP;
+        // mLayoutMode = mStackFromBottom ? LAYOUT_FORCE_BOTTOM :
+        // LAYOUT_FORCE_TOP;
         mSelectorPosition = INVALID_POSITION;
     }
+
     static int getDistance(Rect source, Rect dest, int direction) {
         int sX, sY;
         int dX, dY;
@@ -1742,40 +1797,47 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             break;
         default:
             throw new IllegalArgumentException("direction must be one of "
-                    + "{FOCUS_UP, FOCUS_DOWN, FOCUS_LEFT, FOCUS_RIGHT, "
-                    + "FOCUS_FORWARD, FOCUS_BACKWARD}.");
+                    + "{FOCUS_UP, FOCUS_DOWN, FOCUS_LEFT, FOCUS_RIGHT, " + "FOCUS_FORWARD, FOCUS_BACKWARD}.");
         }
         int deltaX = dX - sX;
         int deltaY = dY - sY;
         return deltaY * deltaY + deltaX * deltaX;
     }
+
     @Override
     protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
         return new ZrcAbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 0);
     }
+
     @Override
     protected ViewGroup.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
         return new ZrcAbsListView.LayoutParams(p);
     }
+
     @Override
     public LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new ZrcAbsListView.LayoutParams(getContext(), attrs);
     }
+
     @Override
     protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
         return p instanceof ZrcAbsListView.LayoutParams;
     }
+
     public void setTranscriptMode(int mode) {
         mTranscriptMode = mode;
     }
+
     public int getTranscriptMode() {
         return mTranscriptMode;
     }
+
     @Override
     public int getSolidColor() {
         return mCacheColorHint;
     }
+
     public void setCacheColorHint(int color) {
         if (color != mCacheColorHint) {
             mCacheColorHint = color;
@@ -1786,12 +1848,14 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mRecycler.setCacheColorHint(color);
         }
     }
+
     @ViewDebug.ExportedProperty(category = "drawing")
     public int getCacheColorHint() {
         return mCacheColorHint;
     }
+
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-	public void reclaimViews(List<View> views) {
+    public void reclaimViews(List<View> views) {
         int childCount = getChildCount();
         RecyclerListener listener = mRecycler.mRecyclerListener;
         for (int i = 0; i < childCount; i++) {
@@ -1807,145 +1871,136 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         mRecycler.reclaimScrapViews(views);
         removeAllViewsInLayout();
     }
-	public void startLoadMore(){
-		isLoadingMore = false;
-		isLoadMoreOn = true;
-	}
-	public void setLoadMoreSuccess(){
-		isLoadingMore = false;
-	}
-	public void stopLoadMore(){
-		isLoadingMore = false;
-		isLoadMoreOn = false;
-		if(mFlingRunnable!=null){
-			mFlingRunnable.scrollToAdjustViewsUpOrDown();
-		}
-	}
-    public void refresh(){
-    	post(new Runnable() {
-			@Override
-			public void run() {
-		        if(mZrcHeader==null || mZrcHeader.getState() == Headable.STATE_LOADING || onRefreshStart==null || mTouchMode!=TOUCH_MODE_REST){
-		            return;
-		        }
-		    	if(mFirstPosition==0){
-		    		int newTop = mZrcHeader.getHeight();
-		    		if(mFlingRunnable==null){
-		    			mFlingRunnable = new FlingRunnable();
-		    		}
+
+    public void startLoadMore() {
+        isLoadingMore = false;
+        isLoadMoreOn = true;
+    }
+
+    public void setLoadMoreSuccess() {
+        isLoadingMore = false;
+    }
+
+    public void stopLoadMore() {
+        isLoadingMore = false;
+        isLoadMoreOn = false;
+        if (mFlingRunnable != null) {
+            mFlingRunnable.scrollToAdjustViewsUpOrDown();
+        }
+    }
+
+    public void refresh() {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                if (mZrcHeader == null || mZrcHeader.getState() == Headable.STATE_LOADING || onRefreshStart == null
+                        || mTouchMode != TOUCH_MODE_REST) {
+                    return;
+                }
+                if (mFirstPosition == 0) {
+                    int newTop = mZrcHeader.getHeight() + mFirstTopOffset;
+                    if (mFlingRunnable == null) {
+                        mFlingRunnable = new FlingRunnable();
+                    }
                     isRefreshing = true;
                     onRefreshStart.onStart();
                     showHeader = true;
-		    		mZrcHeader.stateChange(Headable.STATE_LOADING, null);
-		    		mFlingRunnable.startScroll(mFirstTop - newTop, (int) (Math.abs(newTop - mFirstTop)/mDensity)+50, true);
-		    		mTouchMode = TOUCH_MODE_RESCROLL;
-		    	}
-			}
-		});
+                    mZrcHeader.stateChange(Headable.STATE_LOADING, null);
+                    mFlingRunnable.startScroll(mFirstTop - newTop,
+                            (int) (Math.abs(newTop - mFirstTop) / mDensity) + 50, true);
+                    mTouchMode = TOUCH_MODE_RESCROLL;
+                }
+            }
+        });
     }
+
     protected void setRecyclerListener(RecyclerListener listener) {
         mRecycler.mRecyclerListener = listener;
     }
-    public void setOnRefreshStartListener(OnStartListener onStart){
-    	this.onRefreshStart = onStart;
+
+    public void setOnRefreshStartListener(OnStartListener onStart) {
+        this.onRefreshStart = onStart;
     }
-    public void setOnLoadMoreStartListener(OnStartListener onStart){
-    	this.onLoadMoreStart = onStart;
+
+    public void setOnLoadMoreStartListener(OnStartListener onStart) {
+        this.onLoadMoreStart = onStart;
     }
-    public void setOnScrollStateListener(OnScrollStateListener onScrollListener){
-    	this.onScrollStateListener = onScrollListener;
+
+    public void setOnScrollStateListener(OnScrollStateListener onScrollListener) {
+        this.onScrollStateListener = onScrollListener;
     }
-    public void setRefreshSuccess(){
-    	setRefreshSuccess("刷新成功");
+
+    public void setRefreshSuccess() {
+        setRefreshSuccess("刷新成功");
     }
-    public void setRefreshSuccess(String msg){
-    	final Headable zrcHeader = mZrcHeader;
-    	if(zrcHeader!=null && zrcHeader.getState()==Headable.STATE_LOADING){
-            isRefreshing = false;
-    		zrcHeader.stateChange(Headable.STATE_SUCCESS, msg);
-    		if(getChildCount()>0){
-	    		final int firstTop = getChildAt(0).getTop();
-	    		final boolean unShownState = mFirstPosition != 0 ||
-	                    firstTop < mListPadding.top + mFirstTopOffset + zrcHeader.getHeight();
-	    		postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if(mFlingRunnable!=null && mTouchMode!=TOUCH_MODE_SCROLL){
-                            showHeader = false;
-							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
-							if(!hasScroll){
-					    		zrcHeader.stateChange(Headable.STATE_REST, null);
-							}else{
-							    postDelayed(mResetRunnable, 500);
-							}
-						}else{
-                            postDelayed(mResetRunnable, 500);
-                        }
-					}
-				}, 1000);
-	    		if(unShownState){
-	    			zrcHeader.toastResultInOtherWay(getContext(), Headable.STATE_SUCCESS);
-	    		}
-    		}else{
-    			zrcHeader.toastResultInOtherWay(getContext(), Headable.STATE_SUCCESS);
-    		}
-    	}
+
+    public void setRefreshSuccess(String msg) {
+        setRefreshDone(msg, Headable.STATE_SUCCESS);
     }
 
     public void setRefreshFail(){
-    	setRefreshFail("刷新失败");
+        setRefreshFail("刷新失败");
     }
-    public void setRefreshFail(String msg) {
-    	final Headable zrcHeader = mZrcHeader;
-    	if(zrcHeader!=null && zrcHeader.getState()==Headable.STATE_LOADING){
+
+    public void setRefreshFail(String msg){
+        setRefreshDone(msg, Headable.STATE_FAIL);
+    }
+
+    private void setRefreshDone(String msg, int state) {
+        final Headable zrcHeader = mZrcHeader;
+        if (zrcHeader != null && zrcHeader.getState() == Headable.STATE_LOADING) {
             isRefreshing = false;
-    		zrcHeader.stateChange(Headable.STATE_FAIL, msg);
-    		if(getChildCount()>0){
-	    		final int firstTop = getChildAt(0).getTop();
-	    		final boolean unShownState = mFirstPosition != 0 ||
-	                    firstTop < mListPadding.top + mFirstTopOffset + zrcHeader.getHeight();
-	    		postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if(mFlingRunnable!=null && mTouchMode!=TOUCH_MODE_SCROLL){
-                            showHeader = false;
-							boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
-							if(!hasScroll){
-					    		zrcHeader.stateChange(Headable.STATE_REST, null);
-                            }else{
-                                postDelayed(mResetRunnable, 500);
-                            }
-                        }else{
+            zrcHeader.stateChange(state, msg);
+            final int childCount = getChildCount();
+            final int firstTop = childCount == 0 ? mFirstTop : getChildAt(0).getTop();
+            final boolean unShownState = mFirstPosition != 0
+                    || firstTop < mListPadding.top + mFirstTopOffset + zrcHeader.getHeight();
+            postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (mFlingRunnable != null && mTouchMode != TOUCH_MODE_SCROLL) {
+                        showHeader = false;
+                        boolean hasScroll = mFlingRunnable.scrollToAdjustViewsUpOrDown();
+                        if (!hasScroll) {
+                            zrcHeader.stateChange(Headable.STATE_REST, null);
+                        } else {
                             postDelayed(mResetRunnable, 500);
                         }
-					}
-				}, 1000);
-	    		if(unShownState){
-	    			zrcHeader.toastResultInOtherWay(getContext(), Headable.STATE_FAIL);
-	    		}
-    		}else{
-    			zrcHeader.toastResultInOtherWay(getContext(), Headable.STATE_FAIL);
-    		}
-    	}
-	}
-    public void setHeadable(Headable header){
-    	this.mZrcHeader = header;
+                    } else {
+                        postDelayed(mResetRunnable, 500);
+                    }
+                }
+            }, 1000);
+            if (unShownState) {
+                zrcHeader.toastResultInOtherWay(getContext(), state);
+            }
+        }
     }
-    public void setFootable(Footable footer){
-    	this.mZrcFooter = footer;
+
+    public void setHeadable(Headable header) {
+        this.mZrcHeader = header;
     }
-    public Headable getHeadable(){
-    	return mZrcHeader;
+
+    public void setFootable(Footable footer) {
+        this.mZrcFooter = footer;
     }
-    public Footable getFootable(){
-    	return mZrcFooter;
+
+    public Headable getHeadable() {
+        return mZrcHeader;
     }
-    public void setFirstTopOffset(int offset){
-    	this.mFirstTopOffset = offset;
+
+    public Footable getFootable() {
+        return mZrcFooter;
     }
-    public void setLastBottomOffset(int offset){
-    	this.mLastBottomOffset = offset;
+
+    public void setFirstTopOffset(int offset) {
+        this.mFirstTopOffset = offset;
     }
+
+    public void setLastBottomOffset(int offset) {
+        this.mLastBottomOffset = offset;
+    }
+
     @Override
     public Parcelable onSaveInstanceState() {
         Parcelable superState = super.onSaveInstanceState();
@@ -1953,90 +2008,105 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         ss.mFirstPosition = mFirstPosition;
         return ss;
     }
-	@Override
+
+    @Override
     public void onRestoreInstanceState(Parcelable state) {
         SavedState ss = (SavedState) state;
         super.onRestoreInstanceState(ss.getSuperState());
         mFirstPosition = ss.mFirstPosition;
         requestLayout();
-        if(mFlingRunnable!=null){
-        	mFlingRunnable.scrollToAdjustViewsUpOrDown();
+        if (mFlingRunnable != null) {
+            mFlingRunnable.scrollToAdjustViewsUpOrDown();
         }
-	}
-    static class SavedState extends BaseSavedState{
-    	private int mFirstPosition;
-		public SavedState(Parcelable arg0) {
-			super(arg0);
-		}
-		private SavedState(Parcel in) {
+    }
+
+    static class SavedState extends BaseSavedState {
+        private int mFirstPosition;
+
+        public SavedState(Parcelable arg0) {
+            super(arg0);
+        }
+
+        private SavedState(Parcel in) {
             super(in);
             mFirstPosition = in.readInt();
-            //mFirstTop = in.readInt();
+            // mFirstTop = in.readInt();
         }
-		@Override
+
+        @Override
         public void writeToParcel(Parcel out, int flags) {
             super.writeToParcel(out, flags);
             out.writeInt(mFirstPosition);
-            //out.writeInt(mFirstTop);
+            // out.writeInt(mFirstTop);
         }
+
         @Override
         public String toString() {
-            return "AbsListView.SavedState{"
-                    + Integer.toHexString(System.identityHashCode(this))
-                    + " firstPosition=" + mFirstPosition
-                    /*+ " firstTop=" + mFirstTop*/ + "}";
+            return "AbsListView.SavedState{" + Integer.toHexString(System.identityHashCode(this)) + " firstPosition="
+                    + mFirstPosition
+                    /* + " firstTop=" + mFirstTop */+ "}";
         }
-        public static final Parcelable.Creator<SavedState> CREATOR
-                = new Parcelable.Creator<SavedState>() {
+
+        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
             @Override
             public SavedState createFromParcel(Parcel in) {
                 return new SavedState(in);
             }
+
             @Override
             public SavedState[] newArray(int size) {
                 return new SavedState[size];
             }
         };
     }
+
     class AdapterDataSetObserver extends ZrcAdapterView<ListAdapter>.AdapterDataSetObserver {
         @Override
         public void onChanged() {
-//        	if(mFlingRunnable!=null){
-//        		mFlingRunnable.endFling();
-//        	}
+            // if(mFlingRunnable!=null){
+            // mFlingRunnable.endFling();
+            // }
             super.onChanged();
         }
+
         @Override
         public void onInvalidated() {
-//        	if(mFlingRunnable!=null){
-//        		mFlingRunnable.endFling();
-//        	}
+            // if(mFlingRunnable!=null){
+            // mFlingRunnable.endFling();
+            // }
             super.onInvalidated();
         }
     }
+
     public static class LayoutParams extends ViewGroup.LayoutParams {
         int viewType;
         boolean recycledHeaderFooter;
         boolean forceAdd;
         int scrappedFromPosition;
         long itemId = -1;
+
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
         }
+
         public LayoutParams(int w, int h) {
             super(w, h);
         }
+
         public LayoutParams(int w, int h, int viewType) {
             super(w, h);
             this.viewType = viewType;
         }
+
         public LayoutParams(ViewGroup.LayoutParams source) {
             super(source);
         }
     }
+
     public static interface RecyclerListener {
         void onMovedToScrapHeap(View view);
     }
+
     class RecycleBin {
         private RecyclerListener mRecyclerListener;
         private int mFirstActivePosition;
@@ -2047,8 +2117,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
         private ArrayList<View> mSkippedScrap;
         private SparseArrayCompat<View> mTransientStateViews;
         private LongSparseArray<View> mTransientStateViewsById;
+
         @SuppressWarnings("unchecked")
-		public void setViewTypeCount(int viewTypeCount) {
+        public void setViewTypeCount(int viewTypeCount) {
             if (viewTypeCount < 1) {
                 throw new IllegalArgumentException("Can't have a viewTypeCount < 1");
             }
@@ -2060,6 +2131,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             mCurrentScrap = scrapViews[0];
             mScrapViews = scrapViews;
         }
+
         public void markChildrenDirty() {
             if (mViewTypeCount == 1) {
                 final ArrayList<View> scrap = mCurrentScrap;
@@ -2090,9 +2162,11 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
+
         public boolean shouldRecycleViewType(int viewType) {
             return viewType >= 0;
         }
+
         void clear() {
             if (mViewTypeCount == 1) {
                 final ArrayList<View> scrap = mCurrentScrap;
@@ -2117,6 +2191,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 mTransientStateViewsById.clear();
             }
         }
+
         void fillActiveViews(int childCount, int firstActivePosition) {
             if (mActiveViews.length < childCount) {
                 mActiveViews = new View[childCount];
@@ -2131,16 +2206,18 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
+
         View getActiveView(int position) {
             int index = position - mFirstActivePosition;
             final View[] activeViews = mActiveViews;
-            if (index >=0 && index < activeViews.length) {
+            if (index >= 0 && index < activeViews.length) {
                 final View match = activeViews[index];
                 activeViews[index] = null;
                 return match;
             }
             return null;
         }
+
         View getTransientStateView(int position) {
             if (mAdapter != null && mAdapterHasStableIds && mTransientStateViewsById != null) {
                 long id = mAdapter.getItemId(position);
@@ -2158,6 +2235,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
             return null;
         }
+
         void clearTransientStateViews() {
             if (mTransientStateViews != null) {
                 mTransientStateViews.clear();
@@ -2166,6 +2244,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 mTransientStateViewsById.clear();
             }
         }
+
         View getScrapView(int position) {
             if (mViewTypeCount == 1) {
                 return retrieveFromScrap(mCurrentScrap, position);
@@ -2177,8 +2256,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
             return null;
         }
+
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-		void addScrapView(View scrap, int position) {
+        void addScrapView(View scrap, int position) {
             final ZrcAbsListView.LayoutParams lp = (ZrcAbsListView.LayoutParams) scrap.getLayoutParams();
             if (lp == null) {
                 return;
@@ -2188,7 +2268,8 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             if (!shouldRecycleViewType(viewType)) {
                 return;
             }
-            final boolean scrapHasTransientState = android.os.Build.VERSION.SDK_INT >= 16 ? scrap.hasTransientState() : false;
+            final boolean scrapHasTransientState = android.os.Build.VERSION.SDK_INT >= 16 ? scrap.hasTransientState()
+                    : false;
             if (scrapHasTransientState) {
                 if (mAdapter != null && mAdapterHasStableIds) {
                     if (mTransientStateViewsById == null) {
@@ -2217,6 +2298,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
+
         void removeSkippedScrap() {
             if (mSkippedScrap == null) {
                 return;
@@ -2227,8 +2309,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
             mSkippedScrap.clear();
         }
+
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-		void scrapActiveViews() {
+        void scrapActiveViews() {
             final View[] activeViews = mActiveViews;
             final boolean hasListener = mRecyclerListener != null;
             final boolean multipleScraps = mViewTypeCount > 1;
@@ -2237,14 +2320,13 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             for (int i = count - 1; i >= 0; i--) {
                 final View victim = activeViews[i];
                 if (victim != null) {
-                    final ZrcAbsListView.LayoutParams lp
-                            = (ZrcAbsListView.LayoutParams) victim.getLayoutParams();
+                    final ZrcAbsListView.LayoutParams lp = (ZrcAbsListView.LayoutParams) victim.getLayoutParams();
                     int whichScrap = lp.viewType;
                     activeViews[i] = null;
-					final boolean scrapHasTransientState = android.os.Build.VERSION.SDK_INT >= 16 ? victim.hasTransientState() : false;
+                    final boolean scrapHasTransientState = android.os.Build.VERSION.SDK_INT >= 16 ? victim
+                            .hasTransientState() : false;
                     if (!shouldRecycleViewType(whichScrap) || scrapHasTransientState) {
-                        if (whichScrap != ITEM_VIEW_TYPE_HEADER_OR_FOOTER &&
-                                scrapHasTransientState) {
+                        if (whichScrap != ITEM_VIEW_TYPE_HEADER_OR_FOOTER && scrapHasTransientState) {
                             removeDetachedView(victim, false);
                         }
                         if (scrapHasTransientState) {
@@ -2276,8 +2358,9 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
             pruneScrapViews();
         }
+
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-		private void pruneScrapViews() {
+        private void pruneScrapViews() {
             final int maxViews = mActiveViews.length;
             final int viewTypeCount = mViewTypeCount;
             final ArrayList<View>[] scrapViews = mScrapViews;
@@ -2300,6 +2383,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
+
         void reclaimScrapViews(List<View> views) {
             if (mViewTypeCount == 1) {
                 views.addAll(mCurrentScrap);
@@ -2312,6 +2396,7 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
                 }
             }
         }
+
         void setCacheColorHint(int color) {
             if (mViewTypeCount == 1) {
                 final ArrayList<View> scrap = mCurrentScrap;
@@ -2339,13 +2424,13 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements
             }
         }
     }
+
     static View retrieveFromScrap(ArrayList<View> scrapViews, int position) {
         int size = scrapViews.size();
         if (size > 0) {
-            for (int i=0; i<size; i++) {
+            for (int i = 0; i < size; i++) {
                 View view = scrapViews.get(i);
-                if (((ZrcAbsListView.LayoutParams)view.getLayoutParams())
-                        .scrappedFromPosition == position) {
+                if (((ZrcAbsListView.LayoutParams) view.getLayoutParams()).scrappedFromPosition == position) {
                     scrapViews.remove(i);
                     return view;
                 }

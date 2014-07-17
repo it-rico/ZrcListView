@@ -72,9 +72,6 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Bug，当ZListView为没有数据时，无法下位刷新。建议当无数据的加载使用loading界面、无数据界面。
-        msgs = new ArrayList<String>();
-        msgs.add("");
         adapter = new MyAdapter();
         listView.setAdapter(adapter);
         listView.refresh(); // 主动下拉刷新

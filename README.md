@@ -11,8 +11,7 @@ ZrcListView
 ### 与其他下拉刷新列表组件的不同 ###
     1.其他下拉刷新组件的实现基本是通过动态更改Header的大小来实现的，而ZrcListView是修改了Listview的边界判断；
     2.其他下拉刷新组件很容易在下拉刷新时变得卡顿，这是动态更改子View引起的，而ZrcListView的下拉刷新部分与滑动内容一样顺滑；
-    3.可以设置默认列表头偏移量，这使得实现透明ActionBar与ListView叠加变得很容易；
-    4.其他下拉刷新可以在无列表项时下拉刷新，而ZrcListView的实现与ListView的滑动息息相关，在无列表项时，暂时无法下拉刷新。
+    3.可以设置默认列表头偏移量，这使得实现透明ActionBar与ListView叠加变得很容易。
     
 ## **ZrcListView使用示例** ##
 

@@ -332,7 +332,6 @@ public class ZrcListView extends ZrcAbsListView {
     private void fillDown(int pos, int nextTop, boolean isAnim) {
         int end = (getBottom() - getTop());
         while (nextTop < end && pos < mItemCount) {
-            // is this the selected item?
             View child = makeAndAddView(pos, nextTop, true, mListPadding.left, false);
             nextTop = child.getBottom() + mDividerHeight;
             if (isAnim && mItemAnimForBottomIn != 0 && child.getVisibility() == View.VISIBLE) {
@@ -527,11 +526,6 @@ public class ZrcListView extends ZrcAbsListView {
         try {
             super.layoutChildren();
             invalidate();
-            if (mAdapter == null) {
-                resetList();
-                invokeOnItemScrollListener();
-                return;
-            }
             final int childrenTop = mListPadding.top + mFirstTopOffset;
             final int childrenBottom = getBottom() - getTop() - mListPadding.bottom - mLastBottomOffset;
             final int childCount = getChildCount();
@@ -543,11 +537,7 @@ public class ZrcListView extends ZrcAbsListView {
 
             // Handle the empty set by removing all views that are visible
             // and calling it a day
-            if (mItemCount == 0) {
-                resetList();
-                invokeOnItemScrollListener();
-                return;
-            } else if (mItemCount != mAdapter.getCount()) {
+            if (mAdapter!=null && mItemCount != mAdapter.getCount()) {
                 throw new IllegalStateException("The content of the adapter has changed but "
                         + "ListView did not receive a notification. Make sure the content of "
                         + "your adapter is not modified from a background thread, but only from "
@@ -567,7 +557,7 @@ public class ZrcListView extends ZrcAbsListView {
             // Pull all children into the RecycleBin.
             // These views will be reused if possible
             final int firstPosition = mFirstPosition;
-            final int firstTop = mFirstTop + mListPadding.top + mFirstTopOffset;// childCount>0?getChildAt(0).getTop():mListPadding.top;
+            final int firstTop = mFirstTop;
             final RecycleBin recycleBin = mRecycler;
             if (dataChanged) {
                 for (int i = 0; i < childCount; i++) {
@@ -590,7 +580,11 @@ public class ZrcListView extends ZrcAbsListView {
                 fillFromTop(childrenTop);
                 break;
             default:
-                if(mFirstPosition >= mItemCount){
+                if(mItemCount==0){
+                    if(mTouchMode!=TOUCH_MODE_SCROLL){
+                        scrollToAdjustViewsUpOrDown();
+                    }
+                }else if(firstPosition >= mItemCount){
                     mFirstPosition = mItemCount - 1;
                     View child = makeAndAddView(mFirstPosition, 1, false, mListPadding.left, false);
                     if (mItemAnimForTopIn != 0 && child.getVisibility() == View.VISIBLE) {
@@ -598,7 +592,7 @@ public class ZrcListView extends ZrcAbsListView {
                     }
                     scrollToAdjustViewsUpOrDown();
                 }else{
-                    fillDown(mFirstPosition, firstTop, false);
+                    fillDown(firstPosition, firstTop, false);
                     if(mTouchMode!=TOUCH_MODE_SCROLL){
                         scrollToAdjustViewsUpOrDown();
                     }
