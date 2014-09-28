@@ -87,7 +87,6 @@ public class SimpleHeader implements Headable {
             }
             mPaint.setColor(mPointColor);
             for (int i = 0; i < mPice; i++) {
-                // else paint.setColor(Color.rgb(50, 50, 50));
                 int angleParam;
                 if (offset < height * 3 / 4) {
                     angleParam = offset * 16 / height - 3;// 每1%转0.16度;

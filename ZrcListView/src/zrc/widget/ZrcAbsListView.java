@@ -17,7 +17,6 @@ import android.support.v4.util.LongSparseArray;
 import android.support.v4.util.SparseArrayCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -1571,7 +1570,6 @@ abstract class ZrcAbsListView extends ZrcAdapterView<ListAdapter> implements Vie
             mTouchMode = TOUCH_MODE_FLING;
             return true;
         }
-        Log.d("zz", showHeader +"?");
         if (isOutOfTop || isOutOfBottom) {
             if (mTouchMode == TOUCH_MODE_SCROLL) {
                 incrementalDeltaY /= 1.7f;
