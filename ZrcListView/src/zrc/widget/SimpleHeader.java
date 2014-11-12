@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
+import android.util.Log;
 import android.util.TypedValue;
 import android.widget.Toast;
 
@@ -27,17 +28,20 @@ public class SimpleHeader implements Headable {
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setStyle(Style.FILL);
-        int fontSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 20, context.getResources()
-                .getDisplayMetrics());
+        int fontSize = (int) TypedValue
+                .applyDimension(TypedValue.COMPLEX_UNIT_SP, 20, context.getResources()
+                        .getDisplayMetrics());
         mPaint.setTextSize(fontSize);
         mPaint.setTextAlign(Align.CENTER);
         mTextColor = 0xffffffff;
         mPointColor = 0xffffffff;
         mFontOffset = -(mPaint.getFontMetrics().top + mPaint.getFontMetrics().bottom) / 2;
-        mHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 45, context.getResources()
-                .getDisplayMetrics());
-        mPointRadius = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2.5f, context.getResources()
-                .getDisplayMetrics());
+        mHeight = (int) TypedValue
+                .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 45, context.getResources()
+                        .getDisplayMetrics());
+        mPointRadius =
+                TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2.5f, context.getResources()
+                        .getDisplayMetrics());
         mCircleRadius = mPointRadius * 3.5f;
     }
 
@@ -60,6 +64,7 @@ public class SimpleHeader implements Headable {
         }
         mState = state;
         this.mMsg = msg;
+        Log.d("zzSTATE", state+"");
     }
 
     @Override

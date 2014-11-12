@@ -19,21 +19,20 @@ import zrc.widget.ZrcListView.OnItemLongClickListener;
 abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
     public static final int ITEM_VIEW_TYPE_IGNORE = -1;
     public static final int ITEM_VIEW_TYPE_HEADER_OR_FOOTER = -2;
+    public static final int INVALID_POSITION = -1;
+    public static final long INVALID_ROW_ID = Long.MIN_VALUE;
     int mFirstPosition = 0;
     int mFirstTop = 0;
     boolean mInLayout = false;
     OnItemClickListener mOnItemClickListener;
     OnItemLongClickListener mOnItemLongClickListener;
     boolean mDataChanged;
-    private View mEmptyView;
     int mItemCount;
     int mOldItemCount;
-    public static final int INVALID_POSITION = -1;
-    public static final long INVALID_ROW_ID = Long.MIN_VALUE;
+    boolean mBlockLayoutRequests = false;
+    private View mEmptyView;
     private boolean mDesiredFocusableState;
     private boolean mDesiredFocusableInTouchModeState;
-
-    boolean mBlockLayoutRequests = false;
 
     public ZrcAdapterView(Context context) {
         super(context);
@@ -47,21 +46,25 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
         super(context, attrs, defStyle);
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        mOnItemClickListener = listener;
-    }
-
     public final OnItemClickListener getOnItemClickListener() {
         return mOnItemClickListener;
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        mOnItemClickListener = listener;
     }
 
     public boolean performItemClick(View view, int position, long id) {
         if (mOnItemClickListener != null) {
             playSoundEffect(SoundEffectConstants.CLICK);
-            mOnItemClickListener.onItemClick((ZrcListView)this, view, position, id);
+            mOnItemClickListener.onItemClick((ZrcListView) this, view, position, id);
             return true;
         }
         return false;
+    }
+
+    public final OnItemLongClickListener getOnItemLongClickListener() {
+        return mOnItemLongClickListener;
     }
 
     public void setOnItemLongClickListener(OnItemLongClickListener listener) {
@@ -69,10 +72,6 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
             setLongClickable(true);
         }
         mOnItemLongClickListener = listener;
-    }
-
-    public final OnItemLongClickListener getOnItemLongClickListener() {
-        return mOnItemLongClickListener;
     }
 
     public abstract T getAdapter();
@@ -148,6 +147,10 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
         return mFirstPosition + getChildCount() - 1;
     }
 
+    public View getEmptyView() {
+        return mEmptyView;
+    }
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     public void setEmptyView(View emptyView) {
         mEmptyView = emptyView;
@@ -155,10 +158,6 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
         final T adapter = getAdapter();
         final boolean empty = ((adapter == null) || adapter.isEmpty());
         updateEmptyStatus(empty);
-    }
-
-    public View getEmptyView() {
-        return mEmptyView;
     }
 
     @Override
@@ -236,6 +235,21 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
         dispatchThawSelfOnly(container);
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected boolean canAnimate() {
+        return super.canAnimate() && mItemCount > 0;
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected boolean isSupportHardwareAccelerated() {
+        return APIUtil.isSupport(11) && isHardwareAccelerated();
+    }
+
     class AdapterDataSetObserver extends DataSetObserver {
         @Override
         public void onChanged() {
@@ -254,20 +268,5 @@ abstract class ZrcAdapterView<T extends Adapter> extends ViewGroup {
             checkFocus();
             requestLayout();
         }
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-    }
-
-    @Override
-    protected boolean canAnimate() {
-        return super.canAnimate() && mItemCount > 0;
-    }
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected boolean isSupportHardwareAccelerated(){
-        return APIUtil.isSupport(11) && isHardwareAccelerated();
     }
 }

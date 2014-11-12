@@ -16,35 +16,33 @@
 
 package zrc.widget;
 
-import java.util.ArrayList;
-
 import android.database.DataSetObserver;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.WrapperListAdapter;
 
+import java.util.ArrayList;
+
 /**
  * ListAdapter used when a ListView has header views. This ListAdapter wraps
  * another one and also keeps track of the header views and their associated
  * data objects.
- * <p>
+ * <p/>
  * This is intended as a base class; you will probably not need to use this
  * class directly in your own code.
  */
 public class HeaderViewListAdapter implements WrapperListAdapter {
 
+    // Used as a placeholder in case the provided info views are indeed null.
+    // Currently only used by some CTS tests, which may be removed.
+    static final ArrayList<ZrcListView.FixedViewInfo> EMPTY_INFO_LIST =
+            new ArrayList<ZrcListView.FixedViewInfo>();
     private final ListAdapter mAdapter;
-
     // These two ArrayList are assumed to NOT be null.
     // They are indeed created when declared in ListView and then shared.
     ArrayList<ZrcListView.FixedViewInfo> mHeaderViewInfos;
     ArrayList<ZrcListView.FixedViewInfo> mFooterViewInfos;
-
-    // Used as a placeholder in case the provided info views are indeed null.
-    // Currently only used by some CTS tests, which may be removed.
-    static final ArrayList<ZrcListView.FixedViewInfo> EMPTY_INFO_LIST = new ArrayList<ZrcListView.FixedViewInfo>();
-
     boolean mAreAllFixedViewsSelectable;
 
     public HeaderViewListAdapter(ArrayList<ZrcListView.FixedViewInfo> headerViewInfos,

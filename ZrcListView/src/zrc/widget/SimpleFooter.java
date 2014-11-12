@@ -19,13 +19,15 @@ public class SimpleFooter implements Footable {
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setStyle(Style.FILL);
-        int fontSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 20, context.getResources()
-                .getDisplayMetrics());
+        int fontSize = (int) TypedValue
+                .applyDimension(TypedValue.COMPLEX_UNIT_SP, 20, context.getResources()
+                        .getDisplayMetrics());
         mPaint.setTextSize(fontSize);
         mPaint.setTextAlign(Align.CENTER);
         mCircleColor = 0xffffffff;
-        mHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 30, context.getResources()
-                .getDisplayMetrics());
+        mHeight = (int) TypedValue
+                .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 30, context.getResources()
+                        .getDisplayMetrics());
     }
 
     public void setCircleColor(int color) {
