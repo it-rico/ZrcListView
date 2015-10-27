@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
-import android.util.Log;
 import android.util.TypedValue;
 import android.widget.Toast;
 
@@ -64,7 +63,6 @@ public class SimpleHeader implements Headable {
         }
         mState = state;
         this.mMsg = msg;
-        Log.d("zzSTATE", state+"");
     }
 
     @Override

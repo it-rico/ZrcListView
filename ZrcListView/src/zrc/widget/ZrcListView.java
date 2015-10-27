@@ -1179,10 +1179,14 @@ public class ZrcListView extends ZrcAbsListView {
     }
 
     public void setSelection(int i) {
+        setSelectionFromTop(i, 0);
+    }
+
+    public void setSelectionFromTop(int i, int offset){
         mFirstPosition = i;
-        mFirstTop = 0;
-        layoutChildren();
-        correctTooHighOrTooLow();
+        mFirstTop = offset;
+        mDataChanged = true;
+        requestLayout();
     }
 
     public static interface OnStartListener {
